@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, mount } from "svelte";
 
   let inputValue = $state("");
-  let inputEl;
+  let inputEl: HTMLElement;
 
   onMount(() => {
     inputEl.focus();
@@ -19,6 +19,7 @@
           bind:value={inputValue}
           onclick={(e) => {
             e.stopPropagation();
+            //@ts-ignore
             e.target.focus();
           }}
         ></textarea>

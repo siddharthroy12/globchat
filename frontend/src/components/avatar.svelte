@@ -4,7 +4,7 @@
   .avatar {
     width: 20px;
     height: 20px;
-    background: #615dff;
+    background: var(--color-primary);
     display: flex;
     align-items: center;
     justify-content: center;

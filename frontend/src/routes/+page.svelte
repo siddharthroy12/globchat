@@ -96,7 +96,7 @@
       componentDom.style.zIndex = "1";
     });
 
-    const componentMount = mount(Addchat, {
+    const componentMount = mount(Chat, {
       target: componentDom,
       props: {},
     });
