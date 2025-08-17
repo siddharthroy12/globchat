@@ -11,6 +11,12 @@
     { marker: maplibregl.Marker; mount: ReturnType<typeof mount> }
   > = new Map();
 
+  // Track AddChat component
+  let addChatComponent: {
+    marker: maplibregl.Marker;
+    mount: ReturnType<typeof mount>;
+  } | null = null;
+
   // Configuration
   const MIN_ZOOM_LEVEL = 5; // Minimum zoom level to show chat components
   const RANDOM_ZOOM_LEVEL = 16; // Zoom level when focusing on a random chat
@@ -37,9 +43,71 @@
     map.on("move", handleMapUpdate);
     map.on("moveend", handleMapUpdate);
 
+    // Listen for click events on the map
+    map.on("click", handleMapClick);
+
     // Initial load
     handleMapUpdate();
   });
+
+  function handleMapClick(e: maplibregl.MapMouseEvent) {
+    if (!map) return;
+
+    const { lng, lat } = e.lngLat;
+
+    // Remove existing AddChat component if it exists
+    removeAddChatComponent();
+
+    // Mount new AddChat component at clicked location
+    mountAddChatComponent(lng, lat);
+  }
+
+  function mountAddChatComponent(lng: number, lat: number) {
+    if (!map || addChatComponent) return;
+
+    const componentDom = document.createElement("div");
+
+    // Add hover event listeners for z-index management
+    componentDom.addEventListener("mouseenter", () => {
+      componentDom.style.zIndex = "9999";
+    });
+
+    componentDom.addEventListener("mouseleave", () => {
+      componentDom.style.zIndex = "1";
+    });
+
+    const componentMount = mount(Addchat, {
+      target: componentDom,
+      props: {
+        onClose: () => {
+          removeAddChatComponent();
+        },
+      },
+    });
+
+    const marker = new maplibregl.Marker({
+      element: componentDom,
+      anchor: "bottom",
+    })
+      .setLngLat([lng, lat])
+      .addTo(map);
+
+    addChatComponent = { marker, mount: componentMount };
+
+    console.log(`Mounted AddChat component at: ${lat}, ${lng}`);
+  }
+
+  function removeAddChatComponent() {
+    if (!addChatComponent) return;
+
+    // Remove marker from map
+    addChatComponent.marker.remove();
+
+    // Clear the reference
+    addChatComponent = null;
+
+    console.log("Removed AddChat component");
+  }
 
   function handleMapUpdate() {
     if (!map) return;
@@ -230,13 +298,16 @@
       essential: true,
     });
   }
+
   // Cleanup on component destroy
   function onDestroy() {
     unloadAllChatComponents();
+    removeAddChatComponent(); // Clean up AddChat component
     if (map) {
       map.off("zoom", handleMapUpdate);
       map.off("move", handleMapUpdate);
       map.off("moveend", handleMapUpdate);
+      map.off("click", handleMapClick); // Remove click listener
     }
   }
 </script>

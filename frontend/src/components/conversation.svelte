@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowUp, Ellipsis, X } from "@lucide/svelte";
+  import { ArrowUp, Ellipsis, Image, X } from "@lucide/svelte";
   import Avatar from "./avatar.svelte";
   type ConversationProps = {
     coordinates: {
@@ -30,7 +30,7 @@
     }}
   >
     <div
-      class="p-3 flex items-center justify-between w-full border-b border-[#445160]"
+      class="p-3 py-2 flex items-center justify-between w-full border-b border-[#445160]"
     >
       <div class="flex items-center">
         <p>{create ? "Start Thread" : "Tread"}</p>
@@ -51,7 +51,7 @@
       <div class="body p-3"></div>
     {/if}
 
-    <div class="bottom p-3 flex gap-2">
+    <div class="bottom p-3 flex gap-2 py-4">
       <div>
         <Avatar />
       </div>
@@ -61,7 +61,12 @@
           placeholder="Write"
           bind:value={inputValue}
         ></textarea>
-        <div class="flex items-center justify-end p-2 bottom-buttons">
+        <div class="flex items-center justify-between p-2 bottom-buttons">
+          <div class="flex items-center gap2">
+            <button class="icon-btn">
+              <Image size={16} />
+            </button>
+          </div>
           <button
             class="btn btn-circle btn-primary w-[24px] h-[24px] p-1"
             disabled={isSendButtonDisabled}
@@ -86,6 +91,7 @@
     justify-content: center;
     align-items: center;
     padding: 0;
+    cursor: pointer;
   }
 
   .icon-btn:hover {

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Dices, LocateFixed, Minus, Plus } from "@lucide/svelte";
+  import { Dices, DoorOpen, LocateFixed, Minus, Plus } from "@lucide/svelte";
+  import LoginModal from "./modals/login-modal.svelte";
   type ControlsProps = {
     zoomToRandomChat: () => void;
     zoomToMyLocation: () => void;
@@ -8,9 +9,25 @@
   };
   let { zoomToRandomChat, zoomToMyLocation, zoomIn, zoomOut }: ControlsProps =
     $props();
+
+  function openLoginModal() {
+    // @ts-ignore
+    document.getElementById("login-modal")?.showModal();
+  }
 </script>
 
+<LoginModal />
 <div class="toolbar">
+  <div class="toolbar__container shadow-md">
+    <button
+      class="btn btn-primary rounded-full"
+      title="Zoom to random chat"
+      onclick={openLoginModal}
+    >
+      <DoorOpen />
+      Log in
+    </button>
+  </div>
   <div class="toolbar__container shadow-md">
     <button
       class="btn btn-primary btn-circle"

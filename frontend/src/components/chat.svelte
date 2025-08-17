@@ -15,7 +15,7 @@
           x: wrapper.getBoundingClientRect().x + 40,
           y: wrapper.getBoundingClientRect().y - 30,
         },
-        create: true,
+        create: false,
         onClose: () => {
           console.log("called");
           conversationOpen = false;

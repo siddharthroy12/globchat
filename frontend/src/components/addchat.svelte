@@ -1,31 +1,41 @@
 <script lang="ts">
   import { onMount, mount } from "svelte";
+  import Conversation from "./conversation.svelte";
+  let wrapper: HTMLElement;
+  type AddChatProps = {
+    onClose: () => void;
+  };
 
-  let inputValue = $state("");
-  let inputEl: HTMLElement;
+  let { onClose }: AddChatProps = $props();
+
+  function showConversation() {
+    const el = document.createElement("div");
+    mount(Conversation, {
+      props: {
+        coordinates: {
+          x: wrapper.getBoundingClientRect().x + 40,
+          y: wrapper.getBoundingClientRect().y - 30,
+        },
+        create: true,
+        onClose: () => {
+          onClose();
+          document.body.removeChild(el);
+        },
+      },
+      target: el,
+    });
+
+    document.body.appendChild(el);
+  }
 
   onMount(() => {
-    inputEl.focus();
+    showConversation();
   });
 </script>
 
-<div class="add-chat-wrapper">
+<div class="add-chat-wrapper" bind:this={wrapper}>
   <div class="add-chat">
     <div class="pointer shadow-md"></div>
-    <div class="input-container shadow-md">
-      <div class="text-area-wrapper">
-        <textarea
-          bind:this={inputEl}
-          bind:value={inputValue}
-          onclick={(e) => {
-            e.stopPropagation();
-            //@ts-ignore
-            e.target.focus();
-          }}
-        ></textarea>
-      </div>
-      <div class="buttons-wrapper"></div>
-    </div>
   </div>
 </div>
 
@@ -47,13 +57,5 @@
     width: 30px;
     height: 30px;
     background-color: var(--color-primary);
-  }
-  .input-container {
-    background-color: var(--color-base-100);
-    border-radius: 10px;
-    color: var(--color-primary-content);
-  }
-  .text-area-wrapper {
-    padding: 10px;
   }
 </style>
