@@ -70,7 +70,7 @@
     align-items: start;
     gap: 10px;
     transition:
-      width 200ms,
+      width 70ms,
       max-height 200ms,
       padding 200ms;
   }
