@@ -1,1 +1,2 @@
 export GLOBECHAT_DB_DSN=""
+export GOOGLE_CLIENT_ID=""

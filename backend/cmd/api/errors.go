@@ -5,13 +5,15 @@ import (
 	"net/http"
 )
 
-func (app *application) logError(r *http.Request, err error) {
+var ErrInvalidToken = fmt.Errorf("invalid token")
+
+func (app *application) logError(r *http.Request, err error, action string) {
 	var (
 		method = r.Method
 		uri    = r.URL.RequestURI()
 	)
 
-	app.logger.Error(err.Error(), "method", method, "uri", uri)
+	app.logger.Error(err.Error(), "method", method, "uri", uri, "action", action)
 }
 
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
@@ -20,21 +22,21 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, st
 	err := app.writeJSON(w, status, env, nil)
 
 	if err != nil {
-		app.logError(r, err)
+		app.logError(r, err, "errorResponse")
 		w.WriteHeader(500)
 	}
 }
 
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
-	app.errorResponse(w, r, http.StatusBadRequest, err)
+	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
 }
 
 func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
 
-func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
-	app.logError(r, err)
+func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error, action string) {
+	app.logError(r, err, action)
 
 	message := "this server encountered a problem and could not process your request"
 	app.errorResponse(w, r, http.StatusInternalServerError, message)
@@ -46,6 +48,6 @@ func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
-	message := fmt.Sprintf("this %s method is not supported for this resource", r.Method)
+	message := fmt.Sprintf("%s method is not supported for this resource", r.Method)
 	app.errorResponse(w, r, http.StatusNotFound, message)
 }

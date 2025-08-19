@@ -10,9 +10,11 @@ func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/google/login", app.loginWihGoogle)
+	router.HandlerFunc(http.MethodGet, "/v1/logout", app.requireAuthentication(app.logout))
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
-	return app.recoverPanic(router)
+	return app.recoverPanic(app.authenticate(router))
 
 }

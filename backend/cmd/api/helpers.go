@@ -11,10 +11,8 @@ import (
 
 type envelope map[string]any
 
-func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-	r.Body = http.MaxBytesReader(w, r.Body, 1_048_576)
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
+func (app *application) readJSON(r io.Reader, dst any) error {
+	dec := json.NewDecoder(r)
 
 	err := dec.Decode(dst)
 
@@ -55,6 +53,11 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	}
 
 	return nil
+}
+
+func (app *application) readJSONFromRequest(w http.ResponseWriter, r *http.Request, dst any) error {
+	r.Body = http.MaxBytesReader(w, r.Body, 1_048_576)
+	return app.readJSON(r.Body, dst)
 }
 
 func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
