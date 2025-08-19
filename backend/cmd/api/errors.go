@@ -42,12 +42,12 @@ func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Reque
 	app.errorResponse(w, r, http.StatusInternalServerError, message)
 }
 
-func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
+func (app *application) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	message := "the requested resouces could not be found"
 	app.errorResponse(w, r, http.StatusNotFound, message)
 }
 
-func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
+func (app *application) methodNotAllowedHandler(w http.ResponseWriter, r *http.Request) {
 	message := fmt.Sprintf("%s method is not supported for this resource", r.Method)
 	app.errorResponse(w, r, http.StatusNotFound, message)
 }

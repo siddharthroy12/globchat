@@ -6,18 +6,20 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"globechat.live/internal/models"
 )
 
-func (app *application) generateAccountObject(user models.User) map[string]string {
-	return map[string]string{
-		"email":    user.Email,
-		"username": user.Username,
+func (app *application) generateAccountObject(user models.User) map[string]any {
+	return map[string]any{
+		"email":       user.Email,
+		"username":    user.Username,
+		"new_account": time.Until(user.CreatedAt).Abs().Seconds() < 10,
 	}
 }
 
-func (app *application) loginWihGoogle(w http.ResponseWriter, r *http.Request) {
+func (app *application) loginWihGoogleHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
 		Token string `json:"token"`
@@ -71,8 +73,6 @@ func (app *application) loginWihGoogle(w http.ResponseWriter, r *http.Request) {
 	user, err := app.userModel.GetByEmail(responseData.Email)
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
-			// Create account
-
 			userId, err := app.userModel.Create(responseData.Email, responseData.Email)
 
 			if err != nil {
@@ -93,7 +93,6 @@ func (app *application) loginWihGoogle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Create another session and return it
 	token, err := app.sessionModel.Create(user.ID)
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "create session")
@@ -102,7 +101,13 @@ func (app *application) loginWihGoogle(w http.ResponseWriter, r *http.Request) {
 	app.writeJSON(w, 200, envelope{"token": token, "account": app.generateAccountObject(user)}, nil)
 }
 
-func (app *application) logout(w http.ResponseWriter, r *http.Request) {
+func (app *application) getUserDataHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.getUserFromRequst(r)
+
+	app.writeJSON(w, 200, envelope{"account": app.generateAccountObject(*user)}, nil)
+}
+
+func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	user := app.getUserFromRequst(r)
 
 	err := app.sessionModel.Remove(user.ID)
