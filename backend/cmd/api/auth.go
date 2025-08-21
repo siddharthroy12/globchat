@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"globechat.live/internal/models"
+	"globechat.live/internal/random"
 )
 
 func (app *application) generateAccountObject(user models.User) map[string]any {
@@ -16,8 +17,18 @@ func (app *application) generateAccountObject(user models.User) map[string]any {
 		"id":          user.ID,
 		"email":       user.Email,
 		"username":    user.Username,
-		"new_account": time.Until(user.CreatedAt).Abs().Seconds() < 10,
+		"new_account": user.CreatedAt.Unix()-time.Now().Unix() < 10,
+		"created_at":  user.CreatedAt.UTC(),
+		"image":       user.Image,
+		"messages":    user.Messages,
 	}
+}
+
+func (app *application) createNewUser(email string) (models.User, error) {
+	username := random.GenerateRandomUserName()
+	// Username is available
+	user, err := app.userModel.Create(email, username)
+	return user, err
 }
 
 func (app *application) loginWihGoogleHandler(w http.ResponseWriter, r *http.Request) {
@@ -74,13 +85,13 @@ func (app *application) loginWihGoogleHandler(w http.ResponseWriter, r *http.Req
 	user, err := app.userModel.GetByEmail(responseData.Email)
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
-			userId, err := app.userModel.Create(responseData.Email, responseData.Email)
+			user, err := app.createNewUser(responseData.Email)
 
 			if err != nil {
 				app.serverErrorResponse(w, r, err, "create user")
 				return
 			}
-			token, err := app.sessionModel.Create(userId)
+			token, err := app.sessionModel.Create(user.ID)
 
 			if err != nil {
 				app.serverErrorResponse(w, r, err, "create session")

@@ -13,9 +13,9 @@
 </script>
 
 <dialog id="login-modal" class="modal">
-  <div class="modal-box relative">
+  <div class="modal-box relative rounded-4xl">
     <form method="dialog">
-      <button class="btn btn-sm btn-circle btn-soft absolute right-2 top-2"
+      <button class="btn btn-sm btn-circle btn-soft absolute right-4 top-4"
         >✕</button
       >
     </form>

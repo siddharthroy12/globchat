@@ -1,0 +1,3 @@
+ALTER TABLE users 
+REMOVE COLUMN image TEXT,
+REMOVE COLUMN messages INT;

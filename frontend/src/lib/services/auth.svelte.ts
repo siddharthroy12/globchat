@@ -1,6 +1,8 @@
 export type UserData = {
   id: number;
   email: string;
+  image: string;
+  messages: number;
   username: string;
   new_account: string;
 };
@@ -15,7 +17,6 @@ let authenticationStatus = $state(AuthenticationStatus.Unknown);
 let userData: UserData | null = $state(null);
 
 export function getAuthenticationStatus() {
-  console.log("called");
   return authenticationStatus;
 }
 
@@ -23,9 +24,27 @@ export function getUserData() {
   return userData;
 }
 
+export async function updateUserImageAndUsername(
+  image: string,
+  username: string
+) {
+  const res = await fetch("/api/v1/google/login", {
+    method: "POST",
+    body: JSON.stringify({
+      username,
+      image,
+    }),
+  });
+
+  if (res.status === 200) {
+    userData!.username = username;
+    userData!.image = image;
+  }
+}
+
 export async function checkAuthenticationStatus() {
   authenticationStatus = AuthenticationStatus.Unknown;
-  const res = await fetch("/api/v1/userdetails", {
+  const res = await fetch("/api/v1/user", {
     headers: getAuthHeaders(),
   });
 

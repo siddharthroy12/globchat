@@ -38,7 +38,10 @@
       </button>
     </div>
     <div class="flex flex-col gap-0">
-      <p>{getUserData()?.username}</p>
+      <p class="text-xl">
+        {getUserData()?.username}
+        <span class="text-secondary">#{getUserData()?.id}</span>
+      </p>
       <p>Chats: <span class="text-primary">0</span></p>
     </div>
   </div>
