@@ -9,7 +9,7 @@
   let username = $state("");
   let image = $state("");
   let isUploading = $state(false);
-  let uploadMessage = $state("");
+  let uploadMessage = $state("a");
   let messageType = $state<"success" | "error" | "">("");
 
   // File input reference
@@ -77,10 +77,7 @@
       showMessage("Image uploaded successfully!", "success");
     } catch (error) {
       console.error("Upload error:", error);
-      showMessage(
-        error instanceof Error ? error.message : "Upload failed",
-        "error"
-      );
+      showMessage("Upload failed", "error");
     } finally {
       isUploading = false;
       // Clear file input
@@ -148,7 +145,7 @@
     <!-- Message Display -->
     {#if uploadMessage}
       <div
-        class="alert {messageType === 'success'
+        class="alert rounded-full alert-soft my-3 {messageType === 'success'
           ? 'alert-success'
           : messageType === 'error'
             ? 'alert-error'

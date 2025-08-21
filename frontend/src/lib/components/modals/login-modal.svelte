@@ -1,11 +1,16 @@
 <script>
   import logo from "$lib/assets/icon.webp";
   import { googleLogin } from "$lib/google-login";
-  import { loginUsingGoogle } from "$lib/services/auth.svelte";
+  import { getUserData, loginUsingGoogle } from "$lib/services/auth.svelte";
   import GoogleLogo from "../logos/google-logo.svelte";
   function handleGoogleLogin() {
     googleLogin(async (res) => {
       await loginUsingGoogle(res.credential);
+      if (getUserData()?.new_account) {
+        // @ts-ignore
+        document.getElementById("edit-profile-modal")?.showModal();
+      }
+
       // @ts-ignore
       document.getElementById("login-modal")?.close();
     });

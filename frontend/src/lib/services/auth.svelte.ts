@@ -79,7 +79,7 @@ function removeToken() {
   return localStorage.removeItem("token");
 }
 
-export async function loginUsingGoogle(jwt: string) {
+export async function loginUsingGoogle(jwt: string): Promise<UserData | null> {
   const res = await fetch("/api/v1/google/login", {
     method: "POST",
     body: JSON.stringify({
@@ -93,5 +93,8 @@ export async function loginUsingGoogle(jwt: string) {
     userData = json["account"];
     saveToken(json["token"]);
     authenticationStatus = AuthenticationStatus.LoggedIn;
+    return userData;
   }
+
+  return null;
 }
