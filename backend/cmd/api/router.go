@@ -8,11 +8,10 @@ import (
 
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
-
-	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/google/login", app.loginWihGoogleHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/userdetails", app.requireAuthentication(app.getUserDataHandler))
-	router.HandlerFunc(http.MethodGet, "/v1/logout", app.requireAuthentication(app.logoutHandler))
+	router.HandlerFunc(http.MethodGet, "/api/v1/healthcheck", app.healthcheckHandler)
+	router.HandlerFunc(http.MethodPost, "/api/v1/google/login", app.loginWihGoogleHandler)
+	router.HandlerFunc(http.MethodGet, "/api/v1/userdetails", app.requireAuthentication(app.getUserDataHandler))
+	router.HandlerFunc(http.MethodGet, "/api/v1/logout", app.requireAuthentication(app.logoutHandler))
 	router.NotFound = http.HandlerFunc(app.notFoundHandler)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedHandler)
 

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Chat from "../components/chat.svelte";
+  import Chat from "../lib/components/chat.svelte";
   import maplibregl from "maplibre-gl";
   import { mount, onMount } from "svelte";
-  import Controls from "../components/controls.svelte";
-  import Addchat from "../components/addchat.svelte";
+  import Controls from "../lib/components/controls.svelte";
+  import Addchat from "../lib/components/addchat.svelte";
 
   let map: null | maplibregl.Map = null;
   let mountedComponents: Map<

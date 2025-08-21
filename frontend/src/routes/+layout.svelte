@@ -4,9 +4,11 @@
   import favicon from "$lib/assets/favicon.webp";
   import { onMount } from "svelte";
   import { PUBLIC_GOOGLE_CLIENT_ID } from "$env/static/public";
+  import { checkAuthenticationStatus } from "$lib/services/auth.svelte";
   let { children } = $props();
 
   onMount(() => {
+    checkAuthenticationStatus();
     //@ts-ignore
     google.accounts.id.initialize({
       client_id: PUBLIC_GOOGLE_CLIENT_ID,

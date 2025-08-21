@@ -1,11 +1,13 @@
 <script>
   import logo from "$lib/assets/icon.webp";
   import { googleLogin } from "$lib/google-login";
+  import { loginUsingGoogle } from "$lib/services/auth.svelte";
   import GoogleLogo from "../logos/google-logo.svelte";
-
   function handleGoogleLogin() {
-    googleLogin((res) => {
-      console.log(res);
+    googleLogin(async (res) => {
+      await loginUsingGoogle(res.credential);
+      // @ts-ignore
+      document.getElementById("login-modal")?.close();
     });
   }
 </script>
@@ -13,7 +15,7 @@
 <dialog id="login-modal" class="modal">
   <div class="modal-box relative">
     <form method="dialog">
-      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+      <button class="btn btn-sm btn-circle btn-soft absolute right-2 top-2"
         >✕</button
       >
     </form>

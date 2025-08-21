@@ -6,7 +6,7 @@
   let conversationOpen = $state(false);
   let wrapper: HTMLElement;
 
-  function showConversation() {
+  function showConversation(e: Event) {
     conversationOpen = true;
     const el = document.createElement("div");
     mount(Conversation, {
@@ -26,6 +26,7 @@
     });
 
     document.body.appendChild(el);
+    e.stopPropagation();
   }
 </script>
 
@@ -36,7 +37,7 @@
     onclick={showConversation}
   >
     <div class="avatar-wrapper">
-      <Avatar />
+      <Avatar iconSize={10} />
     </div>
     <div class="content">
       <p class="username">Siddharth Roy <span class="time">1 hr. ago</span></p>
@@ -52,6 +53,7 @@
     position: relative;
   }
   .conversation-bubble {
+    z-index: 1;
     cursor: pointer;
     position: absolute;
     bottom: 0;

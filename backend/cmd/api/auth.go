@@ -13,6 +13,7 @@ import (
 
 func (app *application) generateAccountObject(user models.User) map[string]any {
 	return map[string]any{
+		"id":          user.ID,
 		"email":       user.Email,
 		"username":    user.Username,
 		"new_account": time.Until(user.CreatedAt).Abs().Seconds() < 10,

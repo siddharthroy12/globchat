@@ -1,6 +1,13 @@
 <script lang="ts">
   import { Dices, DoorOpen, LocateFixed, Minus, Plus } from "@lucide/svelte";
   import LoginModal from "./modals/login-modal.svelte";
+  import {
+    AuthenticationStatus,
+    getAuthenticationStatus,
+  } from "$lib/services/auth.svelte";
+  import Avatar from "./avatar.svelte";
+  import AccountInfoCard from "./account-info-card.svelte";
+  import EditProfileModal from "./modals/edit-profile-modal.svelte";
   type ControlsProps = {
     zoomToRandomChat: () => void;
     zoomToMyLocation: () => void;
@@ -16,17 +23,35 @@
   }
 </script>
 
+{#if getAuthenticationStatus() == AuthenticationStatus.LoggedIn}
+  <EditProfileModal />
+{/if}
 <LoginModal />
 <div class="toolbar">
   <div class="toolbar__container shadow-md">
-    <button
-      class="btn btn-primary rounded-full"
-      title="Zoom to random chat"
-      onclick={openLoginModal}
-    >
-      <DoorOpen />
-      Log in
-    </button>
+    {#if getAuthenticationStatus() == AuthenticationStatus.Unknown}
+      <button
+        class="btn btn-primary btn-circle"
+        disabled
+        title="Loading auth status"
+        aria-label="Loading auth status"
+      >
+        <span class="loading loading-spinner loading-xl"></span>
+      </button>
+    {:else if getAuthenticationStatus() == AuthenticationStatus.LoggedIn}
+      <div class="dropdown dropdown-top dropdown-center">
+        <div tabindex="0" role="button" class=""><Avatar size={38} /></div>
+        <AccountInfoCard />
+      </div>
+    {:else}
+      <button
+        class="btn btn-primary rounded-full"
+        title="Zoom to random chat"
+        onclick={openLoginModal}
+      >
+        <DoorOpen />
+        Log in
+      </button>{/if}
   </div>
   <div class="toolbar__container shadow-md">
     <button
