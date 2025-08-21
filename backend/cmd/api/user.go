@@ -7,26 +7,62 @@ import (
 )
 
 func (app *application) updateUserInfoHandler(w http.ResponseWriter, r *http.Request) {
-	input := struct {
-		Username string `json:"username"`
-		Image    string `json:"image"`
-	}{}
-
-	err := app.readJSONFromRequest(w, r, &input)
+	// Parse form data instead of JSON
+	err := r.ParseMultipartForm(32 << 20) // 32MB max memory
 	if err != nil {
-		app.badRequestResponse(w, r, err)
+		app.badRequestResponse(w, r, ErrInvalidInput)
 		return
 	}
 
-	input.Username = strings.TrimSpace(input.Username)
+	// Get username from form
+	username := strings.TrimSpace(r.FormValue("username"))
 
-	if len(input.Username) > 16 || len(input.Username) == 0 {
-		app.badRequestResponse(w, r, fmt.Errorf("username length must be between 0 - 16"))
+	// Validate username
+	if len(username) > 16 || len(username) == 0 {
+		app.badRequestResponse(w, r, fmt.Errorf("username length must be between 1-16 characters"))
 		return
 	}
+
 	user := app.getUserFromRequst(r)
+	var imageURL string
 
-	app.userModel.UpdateImageAndUsername(user.ID, input.Image, input.Username)
+	// Check if an image file was uploaded
+	_, fileHeader, err := r.FormFile("image")
+	if err == nil && fileHeader != nil {
+		// Image was uploaded, process it
+		imageURL, err = app.saveProfilePictureFromRequest(r)
+		if err != nil {
+			// Handle specific errors appropriately
+			switch err {
+			case ErrInvalidInput:
+				app.badRequestResponse(w, r, fmt.Errorf("invalid image file"))
+			case ErrFileSizeTooBig:
+				app.badRequestResponse(w, r, fmt.Errorf("image file too large"))
+			default:
+				app.serverErrorResponse(w, r, err, "save profile picture")
+			}
+			return
+		}
 
-	app.writeJSON(w, 200, envelope{"message": "Updated successfully"}, nil)
+		// If user had an old profile picture, delete it
+		if user.Image != "" {
+			// Extract filename from old image URL
+			oldFilename := strings.TrimPrefix(user.Image, "/media/profile-pictures/")
+			if oldFilename != user.Image { // Make sure it's a valid profile picture URL
+				_ = app.deleteProfilePicture(oldFilename) // Ignore error if file doesn't exist
+			}
+		}
+	} else {
+		// No new image uploaded, keep the existing one
+		imageURL = user.Image
+	}
+
+	// Update user information in database
+	err = app.userModel.UpdateImageAndUsername(user.ID, imageURL, username)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "update user info")
+		return
+	}
+
+	app.writeJSON(w, 200, envelope{"message": "Updated successfully", "image_url": imageURL}, nil)
 }

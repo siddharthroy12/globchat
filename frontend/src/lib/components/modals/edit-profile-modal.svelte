@@ -9,7 +9,7 @@
   let username = $state("");
   let image = $state("");
   let isUploading = $state(false);
-  let uploadMessage = $state("a");
+  let uploadMessage = $state("");
   let messageType = $state<"success" | "error" | "">("");
 
   // File input reference

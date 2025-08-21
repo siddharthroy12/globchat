@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +12,15 @@ import (
 )
 
 type envelope map[string]any
+
+// generateRandomID generates a random hex string for file naming
+func generateRandomID(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
 
 func (app *application) readJSON(r io.Reader, dst any) error {
 	dec := json.NewDecoder(r)

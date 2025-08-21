@@ -2,7 +2,7 @@ include .envrc
 
 .PHONY: run
 run:
-	go run ./cmd/api -dsn ${GLOBECHAT_DB_DSN} -gclientid ${GOOGLE_CLIENT_ID}
+	go run ./cmd/api -dsn ${GLOBECHAT_DB_DSN} -gclientid ${GOOGLE_CLIENT_ID} -mediadir ./media
 
 .PHONY: psql
 psql:

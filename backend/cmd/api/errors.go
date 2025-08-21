@@ -6,6 +6,8 @@ import (
 )
 
 var ErrInvalidToken = fmt.Errorf("invalid token")
+var ErrFileSizeTooBig = fmt.Errorf("file size is too big")
+var ErrInvalidInput = fmt.Errorf("invalid input")
 
 func (app *application) logError(r *http.Request, err error, action string) {
 	var (
