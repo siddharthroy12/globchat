@@ -29,6 +29,8 @@ type application struct {
 	config       config
 	userModel    models.UserModel
 	sessionModel models.SessionModel
+	threadModel  models.ThreadModel
+	messageModel models.MessageModel
 }
 
 func openDB(cfg config) (*sql.DB, error) {
@@ -91,6 +93,12 @@ func main() {
 			DB: db,
 		},
 		sessionModel: models.SessionModel{
+			DB: db,
+		},
+		threadModel: models.ThreadModel{
+			DB: db,
+		},
+		messageModel: models.MessageModel{
 			DB: db,
 		},
 	}

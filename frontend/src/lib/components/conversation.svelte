@@ -1,18 +1,35 @@
 <script lang="ts">
   import { ArrowUp, Ellipsis, Image, X } from "@lucide/svelte";
   import Avatar from "./avatar.svelte";
+  import { createThread, type Thread } from "$lib/services/threads.svelte";
   type ConversationProps = {
     coordinates: {
       x: number;
       y: number;
     };
+    lat: number;
+    long: number;
     onClose: () => void;
+    onCreate: (thread: Thread) => void;
     create: boolean;
   };
-  let { coordinates, onClose, create }: ConversationProps = $props();
+  let { coordinates, onClose, create, onCreate, lat, long }: ConversationProps =
+    $props();
 
   let inputValue = $state("");
   let isSendButtonDisabled = $derived(inputValue.trim() == "");
+
+  async function onCreateThread() {
+    const thread = await createThread(lat, long, inputValue);
+    onCreate(thread);
+  }
+
+  function onSend() {
+    if (create) {
+      onCreateThread();
+    } else {
+    }
+  }
 </script>
 
 <div
@@ -67,6 +84,7 @@
           <button
             class="btn btn-circle btn-primary w-[24px] h-[24px] p-1"
             disabled={isSendButtonDisabled}
+            onclick={onSend}
           >
             <ArrowUp />
           </button>

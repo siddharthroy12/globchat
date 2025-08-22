@@ -4,10 +4,16 @@
   import { mount, onMount } from "svelte";
   import Controls from "../lib/components/controls.svelte";
   import Addchat from "../lib/components/addchat.svelte";
+  import type { Thread } from "$lib/services/threads.svelte";
+  import {
+    fetchRandomThread,
+    fetchThreads,
+  } from "$lib/services/threads.svelte";
+  import { ZoomIn } from "@lucide/svelte";
 
   let map: null | maplibregl.Map = null;
   let mountedComponents: Map<
-    string,
+    number,
     { marker: maplibregl.Marker; mount: ReturnType<typeof mount> }
   > = new Map();
 
@@ -18,22 +24,20 @@
   } | null = null;
 
   // Configuration
-  const MIN_ZOOM_LEVEL = 5; // Minimum zoom level to show chat components
-  const RANDOM_ZOOM_LEVEL = 16; // Zoom level when focusing on a random chat
-  const CHAT_LOCATIONS = [
-    { id: "chat1", lng: 13.3775, lat: 52.516 },
-    { id: "chat2", lng: 13.4, lat: 52.52 },
-    { id: "chat3", lng: 13.42, lat: 52.51 },
-    { id: "chat4", lng: 13.35, lat: 52.505 },
-    { id: "chat5", lng: 13.39, lat: 52.535 },
-    // Add more chat locations as needed
-  ];
+  const MIN_ZOOM_LEVEL = 10; // Minimum zoom level to show chat components
+
+  let mapZoomLevel = $state(0);
+  let zoomedInEnough = $derived(mapZoomLevel >= MIN_ZOOM_LEVEL);
+
+  // Track loaded threads to avoid duplicates
+  let loadedThreads: Thread[] = [];
+  let isLoadingThreads = false;
 
   onMount(() => {
     map = new maplibregl.Map({
       style: "https://tiles.openfreemap.org/styles/liberty",
-      center: [13.4, 52.5],
-      zoom: 10,
+      center: [0, 0],
+      zoom: 0,
       container: "map",
       attributionControl: false,
     });
@@ -53,6 +57,10 @@
   function handleMapClick(e: maplibregl.MapMouseEvent) {
     if (!map) return;
 
+    if (!zoomedInEnough) {
+      return;
+    }
+
     const { lng, lat } = e.lngLat;
 
     // Remove existing AddChat component if it exists
@@ -62,7 +70,8 @@
     mountAddChatComponent(lng, lat);
   }
 
-  function mountAddChatComponent(lng: number, lat: number) {
+  function mountAddChatComponent(long: number, lat: number) {
+    console.log("mounted");
     if (!map || addChatComponent) return;
 
     const componentDom = document.createElement("div");
@@ -79,6 +88,14 @@
     const componentMount = mount(Addchat, {
       target: componentDom,
       props: {
+        lat,
+        long: long,
+        onCreate: (thread: Thread) => {
+          loadChatComponent(thread, true);
+          // Add to loaded threads
+          loadedThreads = [...loadedThreads, thread];
+          removeAddChatComponent();
+        },
         onClose: () => {
           removeAddChatComponent();
         },
@@ -89,12 +106,12 @@
       element: componentDom,
       anchor: "bottom",
     })
-      .setLngLat([lng, lat])
+      .setLngLat([long, lat])
       .addTo(map);
 
     addChatComponent = { marker, mount: componentMount };
 
-    console.log(`Mounted AddChat component at: ${lat}, ${lng}`);
+    console.log(`Mounted AddChat component at: ${lat}, ${long}`);
   }
 
   function removeAddChatComponent() {
@@ -109,49 +126,67 @@
     console.log("Removed AddChat component");
   }
 
-  function handleMapUpdate() {
+  async function handleMapUpdate() {
     if (!map) return;
 
-    const currentZoom = map.getZoom();
+    mapZoomLevel = map.getZoom();
 
-    if (currentZoom >= MIN_ZOOM_LEVEL) {
-      loadVisibleChatComponents();
+    if (zoomedInEnough) {
+      await loadVisibleThreads();
     } else {
       unloadAllChatComponents();
     }
   }
 
-  function loadVisibleChatComponents() {
-    if (!map) return;
+  async function loadVisibleThreads() {
+    if (!map || isLoadingThreads) return;
 
-    const bounds = map.getBounds();
-    const visibleChatIds = new Set<string>();
+    isLoadingThreads = true;
 
-    CHAT_LOCATIONS.forEach((location) => {
-      if (bounds.contains([location.lng, location.lat])) {
-        visibleChatIds.add(location.id);
+    try {
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      const kmRadius = 50;
+
+      console.log(
+        `Fetching threads at ${center.lat}, ${center.lng} with ${kmRadius}km radius`
+      );
+
+      // Fetch threads from API
+      const threads = await fetchThreads(center.lat, center.lng, kmRadius);
+
+      // Get currently visible thread IDs
+      const visibleThreadIds = new Set<number>();
+
+      // Process each thread
+      threads.forEach((thread) => {
+        const threadId = thread.id;
+        visibleThreadIds.add(threadId);
 
         // Load component if not already loaded
-        if (!mountedComponents.has(location.id)) {
-          loadChatComponent(location);
+        if (!mountedComponents.has(threadId)) {
+          loadChatComponent(thread, false);
         }
-      }
-    });
+      });
 
-    // Unload components that are no longer visible
-    mountedComponents.forEach((component, id) => {
-      if (!visibleChatIds.has(id)) {
-        unloadChatComponent(id);
-      }
-    });
+      // Unload components that are no longer in the fetched results
+      mountedComponents.forEach((component, id) => {
+        if (!visibleThreadIds.has(id)) {
+          unloadChatComponent(id);
+        }
+      });
+
+      // Update loaded threads
+      loadedThreads = threads;
+    } catch (error) {
+      console.error("Error fetching threads:", error);
+    } finally {
+      isLoadingThreads = false;
+    }
   }
 
-  function loadChatComponent(location: {
-    id: string;
-    lng: number;
-    lat: number;
-  }) {
-    if (!map || mountedComponents.has(location.id)) return;
+  function loadChatComponent(thread: Thread, showAnimation: boolean) {
+    if (!map || mountedComponents.has(thread.id)) return;
 
     const componentDom = document.createElement("div");
 
@@ -166,22 +201,22 @@
 
     const componentMount = mount(Chat, {
       target: componentDom,
-      props: {},
+      props: { ...thread, showAnimation },
     });
 
     const marker = new maplibregl.Marker({
       element: componentDom,
       anchor: "bottom",
     })
-      .setLngLat([location.lng, location.lat])
+      .setLngLat([thread.long, thread.lat])
       .addTo(map);
 
-    mountedComponents.set(location.id, { marker, mount: componentMount });
+    mountedComponents.set(thread.id, { marker, mount: componentMount });
 
-    console.log(`Loaded chat component: ${location.id}`);
+    console.log(`Loaded chat component: ${thread.id}`);
   }
 
-  function unloadChatComponent(id: string) {
+  function unloadChatComponent(id: number) {
     const component = mountedComponents.get(id);
     if (!component) return;
 
@@ -198,21 +233,22 @@
     mountedComponents.forEach((_, id) => {
       unloadChatComponent(id);
     });
+    loadedThreads = [];
   }
 
-  // New function to zoom to a random chat location
-  function zoomToRandomChat() {
-    if (!map || CHAT_LOCATIONS.length === 0) return;
-
-    const randomIndex = Math.floor(Math.random() * CHAT_LOCATIONS.length);
-    const randomChat = CHAT_LOCATIONS[randomIndex];
-
-    map.flyTo({
-      center: [randomChat.lng, randomChat.lat],
-      zoom: RANDOM_ZOOM_LEVEL,
+  function zoomTo(long: number, lat: number) {
+    map!.flyTo({
+      center: [long, lat],
+      zoom: MIN_ZOOM_LEVEL,
       duration: 2000, // 2 second animation
       essential: true, // This animation is essential with respect to prefers-reduced-motion
     });
+  }
+
+  // New function to zoom to a random chat location from loaded threads
+  async function zoomToRandomChat() {
+    const thread = await fetchRandomThread();
+    zoomTo(thread.long, thread.lat);
   }
 
   function zoomToMyLocation() {
@@ -235,14 +271,7 @@
         const { longitude, latitude } = position.coords;
 
         console.log(`Found location: ${latitude}, ${longitude}`);
-
-        // Zoom to user's location
-        map!.flyTo({
-          center: [longitude, latitude],
-          zoom: RANDOM_ZOOM_LEVEL, // Use same zoom level as random chat
-          duration: 2000, // 2 second animation
-          essential: true, // This animation is essential with respect to prefers-reduced-motion
-        });
+        zoomTo(longitude, latitude);
       },
       (error) => {
         console.error("Error getting location:", error);
@@ -315,6 +344,16 @@
 <svelte:window on:beforeunload={onDestroy} />
 
 <div id="map" style="width: 100vw; height: 100vh"></div>
+
+{#if !zoomedInEnough}
+  <div
+    role="alert"
+    class="alert fixed top-[10px] right-[50%] translate-x-[50%] rounded-full"
+  >
+    <ZoomIn />
+    <span>Zoom in more to view and create chats </span>
+  </div>
+{/if}
 
 <Controls {zoomToRandomChat} {zoomToMyLocation} {zoomIn} {zoomOut}></Controls>
 

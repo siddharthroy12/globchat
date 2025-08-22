@@ -15,6 +15,10 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/api/v1/user", app.requireAuthentication(app.getUserDataHandler))
 	router.HandlerFunc(http.MethodPost, "/api/v1/user", app.requireAuthentication(app.updateUserInfoHandler))
 	router.HandlerFunc(http.MethodGet, "/api/v1/logout", app.requireAuthentication(app.logoutHandler))
+	router.HandlerFunc(http.MethodGet, "/api/v1/threads", app.getThreadsHandler)
+	router.HandlerFunc(http.MethodGet, "/api/v1/threads/random", app.getRandomThread)
+	router.HandlerFunc(http.MethodPost, "/api/v1/threads", app.requireAuthentication(app.createThreadHandler))
+	router.HandlerFunc(http.MethodDelete, "/api/v1/threads", app.requireAuthentication(app.deleteThreadHandler))
 
 	// Media files route (serves static files)
 	router.HandlerFunc(http.MethodGet, "/media/*filepath", app.mediaHandler)

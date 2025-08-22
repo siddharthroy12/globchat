@@ -1,17 +1,29 @@
 <script lang="ts">
-  import { onMount, mount } from "svelte";
+  import { onMount, mount, onDestroy } from "svelte";
   import Conversation from "./conversation.svelte";
+  import type { Thread } from "$lib/services/threads.svelte";
   let wrapper: HTMLElement;
   type AddChatProps = {
     onClose: () => void;
+    onCreate: (thread: Thread) => void;
+    lat: number;
+    long: number;
   };
 
-  let { onClose }: AddChatProps = $props();
+  let { onClose, onCreate, lat, long }: AddChatProps = $props();
+
+  let el: Element | null = $state(null);
 
   function showConversation() {
-    const el = document.createElement("div");
+    el = document.createElement("div");
     mount(Conversation, {
       props: {
+        lat,
+        long,
+        onCreate: (thread) => {
+          onCreate(thread);
+          if (el) document.body.removeChild(el);
+        },
         coordinates: {
           x: wrapper.getBoundingClientRect().x + 40,
           y: wrapper.getBoundingClientRect().y - 30,
@@ -19,12 +31,11 @@
         create: true,
         onClose: () => {
           onClose();
-          document.body.removeChild(el);
+          if (el) document.body.removeChild(el);
         },
       },
       target: el,
     });
-
     document.body.appendChild(el);
   }
 
