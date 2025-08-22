@@ -161,7 +161,7 @@
     });
 
     componentDom.addEventListener("mouseleave", () => {
-      componentDom.style.zIndex = "1";
+      componentDom.style.zIndex = "0";
     });
 
     const componentMount = mount(Chat, {

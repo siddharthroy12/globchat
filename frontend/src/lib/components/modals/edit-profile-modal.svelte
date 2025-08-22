@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Pencil } from "@lucide/svelte";
   import Avatar from "../avatar.svelte";
+  import ImageCropper from "../image-cropper.svelte";
   import {
     getUserData,
     updateUserImageAndUsername,
@@ -15,6 +16,10 @@
   // File input reference
   let fileInput: HTMLInputElement;
   let selectedFile: File | null = null;
+
+  // Cropping states
+  let showCropper = $state(false);
+  let originalImageUrl = $state("");
 
   $effect(() => {
     username = getUserData()!.username;
@@ -45,12 +50,33 @@
 
     selectedFile = file;
 
-    // Create preview URL for immediate display
-    const previewUrl = URL.createObjectURL(file);
-    image = previewUrl;
+    // Create preview URL and show cropper
+    originalImageUrl = URL.createObjectURL(file);
+    showCropper = true;
 
     // Clear file input
     target.value = "";
+  }
+
+  function handleCropComplete(croppedFile: File) {
+    selectedFile = croppedFile;
+
+    // Update preview image
+    if (image.startsWith("blob:")) {
+      URL.revokeObjectURL(image);
+    }
+    image = URL.createObjectURL(croppedFile);
+
+    // Close cropper
+    closeCropper();
+  }
+
+  function closeCropper() {
+    showCropper = false;
+    if (originalImageUrl) {
+      URL.revokeObjectURL(originalImageUrl);
+      originalImageUrl = "";
+    }
   }
 
   function showMessage(message: string, type: "success" | "error") {
@@ -89,12 +115,7 @@
         // Clear the selected file
         selectedFile = null;
 
-        showMessage("Profile updated successfully!", "success");
-
-        // Close modal after successful update
-        setTimeout(() => {
-          closeModal();
-        }, 1500);
+        closeModal();
       } else {
         const errorData = await response.json().catch(() => ({}));
         showMessage(errorData.error || "Failed to update profile", "error");
@@ -114,6 +135,9 @@
       // Reset to original image
       image = getUserData()!.image;
     }
+
+    // Clean up cropper
+    closeCropper();
 
     // Clear selected file
     selectedFile = null;
@@ -139,7 +163,15 @@
   onchange={handleFileSelect}
 />
 
-<dialog id="edit-profile-modal" class="modal rounded-4xl">
+<dialog id="edit-profile-modal" class="modal">
+  <!-- Image Cropper Component -->
+  <ImageCropper
+    imageUrl={originalImageUrl}
+    show={showCropper}
+    onCropComplete={handleCropComplete}
+    onCancel={closeCropper}
+  />
+
   <div class="modal-box relative rounded-4xl">
     <form method="dialog">
       <button

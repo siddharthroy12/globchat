@@ -4,6 +4,7 @@
   import {
     AuthenticationStatus,
     getAuthenticationStatus,
+    getUserData,
   } from "$lib/services/auth.svelte";
   import Avatar from "./avatar.svelte";
   import AccountInfoCard from "./account-info-card.svelte";
@@ -40,7 +41,9 @@
       </button>
     {:else if getAuthenticationStatus() == AuthenticationStatus.LoggedIn}
       <div class="dropdown dropdown-top dropdown-center">
-        <div tabindex="0" role="button" class=""><Avatar size={38} /></div>
+        <div tabindex="0" role="button" class="">
+          <Avatar size={38} src={getUserData()?.image} />
+        </div>
         <AccountInfoCard />
       </div>
     {:else}

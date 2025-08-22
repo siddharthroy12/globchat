@@ -29,7 +29,7 @@
   >
   <div class="flex gap-4 items-center">
     <div class="relative">
-      <Avatar size={76} iconSize={30} />
+      <Avatar size={76} iconSize={30} src={getUserData()?.image} />
       <button
         class="btn btn-soft btn-circle absolute bottom-[-5px] right-[-5px] scale-[90%]"
         onclick={showEditProfile}
