@@ -39,12 +39,12 @@ func (app *application) loginWihGoogleHandler(w http.ResponseWriter, r *http.Req
 
 	err := app.readJSONFromRequest(w, r, &input)
 	if err != nil {
-		app.badRequestResponse(w, r, err)
+		app.badRequestResponse(w, r, fmt.Errorf("nice try"))
 		return
 	}
 
 	if strings.TrimSpace(input.Token) == "" {
-		app.badRequestResponse(w, r, fmt.Errorf("token is empty"))
+		app.badRequestResponse(w, r, fmt.Errorf("are you trying to login without jwt token? are you fr?"))
 		return
 	}
 
@@ -62,7 +62,7 @@ func (app *application) loginWihGoogleHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if res.StatusCode != 200 {
-		app.badRequestResponse(w, r, ErrInvalidToken)
+		app.badRequestResponse(w, r, fmt.Errorf("nice try dude"))
 		return
 	}
 	err = app.readJSON(res.Body, &responseData)
@@ -73,12 +73,12 @@ func (app *application) loginWihGoogleHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if responseData.Aud != app.config.googleClientId {
-		app.badRequestResponse(w, r, ErrInvalidToken)
+		app.badRequestResponse(w, r, fmt.Errorf("do you think you are smarter than me?"))
 		return
 	}
 
 	if !slices.Contains([]string{"accounts.google.com", "https://accounts.google.com"}, responseData.Iss) {
-		app.badRequestResponse(w, r, ErrInvalidToken)
+		app.badRequestResponse(w, r, fmt.Errorf("is google drunk or are you doing something fishy?"))
 		return
 	}
 
@@ -152,7 +152,7 @@ func (app *application) requireAuthentication(next http.HandlerFunc) http.Handle
 			next(w, r)
 			return
 		} else {
-			app.badRequestResponse(w, r, ErrInvalidToken)
+			app.badRequestResponse(w, r, fmt.Errorf("you are trying to enter wrong terrority my guy"))
 		}
 	})
 }
