@@ -14,36 +14,12 @@
 
   // File input reference
   let fileInput: HTMLInputElement;
+  let selectedFile: File | null = null;
 
   $effect(() => {
     username = getUserData()!.username;
     image = getUserData()!.image;
   });
-
-  async function uploadToImgur(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append("image", file);
-
-    const response = await fetch("https://api.imgur.com/3/image", {
-      method: "POST",
-      headers: {
-        Authorization: "Client-ID YOUR_IMGUR_CLIENT_ID", // Replace with your Imgur Client ID
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    if (!data.success) {
-      throw new Error(data.data?.error || "Upload failed");
-    }
-
-    return data.data.link;
-  }
 
   function uploadPicture() {
     fileInput.click();
@@ -67,22 +43,14 @@
       return;
     }
 
-    isUploading = true;
-    uploadMessage = "Uploading image...";
-    messageType = "";
+    selectedFile = file;
 
-    try {
-      const imageUrl = await uploadToImgur(file);
-      image = imageUrl;
-      showMessage("Image uploaded successfully!", "success");
-    } catch (error) {
-      console.error("Upload error:", error);
-      showMessage("Upload failed", "error");
-    } finally {
-      isUploading = false;
-      // Clear file input
-      target.value = "";
-    }
+    // Create preview URL for immediate display
+    const previewUrl = URL.createObjectURL(file);
+    image = previewUrl;
+
+    // Clear file input
+    target.value = "";
   }
 
   function showMessage(message: string, type: "success" | "error") {
@@ -97,23 +65,66 @@
   }
 
   async function updateInfo() {
-    try {
-      await updateUserImageAndUsername(username, image);
-      showMessage("Profile updated successfully!", "success");
+    if (!username.trim()) {
+      showMessage("Username is required", "error");
+      return;
+    }
 
-      // Close modal after successful update
-      setTimeout(() => {
-        closeModal();
-      }, 1500);
+    if (username.trim().length > 16) {
+      showMessage("Username must be 16 characters or less", "error");
+      return;
+    }
+
+    isUploading = true;
+    uploadMessage = "Updating profile...";
+    messageType = "";
+
+    try {
+      const response = await updateUserImageAndUsername(
+        selectedFile,
+        username.trim()
+      );
+
+      if (response.ok) {
+        // Clear the selected file
+        selectedFile = null;
+
+        showMessage("Profile updated successfully!", "success");
+
+        // Close modal after successful update
+        setTimeout(() => {
+          closeModal();
+        }, 1500);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        showMessage(errorData.error || "Failed to update profile", "error");
+      }
     } catch (error) {
+      console.error("Update error:", error);
       showMessage("Failed to update profile", "error");
+    } finally {
+      isUploading = false;
     }
   }
 
   function closeModal() {
+    // Clean up preview URL if exists
+    if (image.startsWith("blob:")) {
+      URL.revokeObjectURL(image);
+      // Reset to original image
+      image = getUserData()!.image;
+    }
+
+    // Clear selected file
+    selectedFile = null;
+
     // Clear any messages when closing
     uploadMessage = "";
     messageType = "";
+
+    // Reset username to original
+    username = getUserData()!.username;
+
     // @ts-ignore
     document.getElementById("edit-profile-modal")?.close();
   }
@@ -178,6 +189,7 @@
             placeholder="Username"
             class="w-full"
             bind:value={username}
+            maxlength="16"
           />
         </label>
       </div>
@@ -191,12 +203,12 @@
         onclick={updateInfo}
         disabled={isUploading}
       >
-        Save
+        {isUploading ? "Saving..." : "Save"}
       </button>
     </div>
   </div>
 
   <form method="dialog" class="modal-backdrop">
-    <button>close</button>
+    <button onclick={closeModal}>close</button>
   </form>
 </dialog>

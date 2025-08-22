@@ -86,7 +86,7 @@ func (app *application) saveProfilePictureFromRequest(r *http.Request) (string, 
 	}
 
 	// Resize image to 38x38 pixels
-	resizedImg := resize.Resize(38, 38, img, resize.Lanczos3)
+	resizedImg := resize.Resize(76, 76, img, resize.Lanczos3)
 
 	// Generate random filename
 	randomID, err := generateRandomID(16) // 32 character hex string

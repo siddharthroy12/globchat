@@ -25,21 +25,37 @@ export function getUserData() {
 }
 
 export async function updateUserImageAndUsername(
-  image: string,
+  imageFile: File | null,
   username: string
 ) {
-  const res = await fetch("/api/v1/google/login", {
+  const formData = new FormData();
+
+  // Add username to form data
+  formData.append("username", username);
+
+  // Add image file if provided
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+
+  const res = await fetch("/api/v1/user", {
+    // Fixed URL - should be /user not /google/login
     method: "POST",
-    body: JSON.stringify({
-      username,
-      image,
-    }),
+    body: formData, // Don't set Content-Type header, let browser set it with boundary
+    headers: getAuthHeaders(),
   });
 
   if (res.status === 200) {
+    const responseData = await res.json();
     userData!.username = username;
-    userData!.image = image;
+
+    // Update image URL from server response if a new image was uploaded
+    if (responseData.image_url) {
+      userData!.image = responseData.image_url;
+    }
   }
+
+  return res;
 }
 
 export async function checkAuthenticationStatus() {

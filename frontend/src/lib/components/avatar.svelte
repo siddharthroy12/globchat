@@ -10,9 +10,11 @@
 
 <div
   class="avatar"
-  style={`width: ${size}px; height: ${size}px; background: ${src ? "url(" + src + ")" : "var(--color-primary)"}`}
+  style={`width: ${size}px; height: ${size}px; background: ${src ? "url(" + src + ")" : "var(--color-primary)"}; background-repeat: no-repeat; background-size: cover;`}
 >
-  <UserRound size={iconSize} />
+  {#if !src}
+    <UserRound size={iconSize} />
+  {/if}
 </div>
 
 <style>

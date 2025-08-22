@@ -13,6 +13,10 @@ export default defineConfig({
         target: devServer,
         changeOrigin: true,
       },
+      "/media/": {
+        target: devServer,
+        changeOrigin: true,
+      },
     },
   },
 });
