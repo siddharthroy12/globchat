@@ -4,21 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
-	"globechat.live/internal/models"
 )
-
-func createThreadObject(thread models.Thread) map[string]any {
-	return map[string]any{
-		"id":         thread.ID,
-		"lat":        thread.Lat,
-		"long":       thread.Long,
-		"user_id":    thread.UserId,
-		"user_name":  thread.Username,
-		"user_image": thread.UserImage,
-		"created_at": thread.CreatedAt,
-	}
-}
 
 func (app *application) createThreadHandler(w http.ResponseWriter, r *http.Request) {
 	user := app.getUserFromRequst(r)
@@ -35,14 +21,24 @@ func (app *application) createThreadHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	thread, err := app.threadModel.Create(input.Lat, input.Long, user.ID)
+	if len(input.Message) == 0 {
+		app.badRequestResponse(w, r, fmt.Errorf("message is empty"))
+		return
+	}
 
+	thread, err := app.threadModel.Create(input.Message, input.Lat, input.Long, user.ID)
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "create thread")
 		return
 	}
+	_, err = app.messageModel.Create(input.Message, "", thread.ID, user.ID, true)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "create message")
+		app.threadModel.Delete(thread.ID)
+		return
+	}
 
-	app.writeJSON(w, 200, envelope{"thread": createThreadObject(thread)}, nil)
+	app.writeJSON(w, 200, envelope{"thread": (thread)}, nil)
 }
 
 func (app *application) getThreadsHandler(w http.ResponseWriter, r *http.Request) {
@@ -76,13 +72,7 @@ func (app *application) getThreadsHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var res = make([]map[string]any, 0)
-
-	for _, thread := range threads {
-		res = append(res, createThreadObject(*thread))
-	}
-
-	app.writeJSON(w, 200, envelope{"threads": res}, nil)
+	app.writeJSON(w, 200, envelope{"threads": threads}, nil)
 }
 
 func (app *application) getRandomThread(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +84,7 @@ func (app *application) getRandomThread(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	app.writeJSON(w, 200, envelope{"thread": createThreadObject(thread)}, nil)
+	app.writeJSON(w, 200, envelope{"thread": (thread)}, nil)
 }
 
 func (app *application) deleteThreadHandler(w http.ResponseWriter, r *http.Request) {
@@ -106,10 +96,6 @@ func (app *application) deleteThreadHandler(w http.ResponseWriter, r *http.Reque
 
 	if err != nil {
 		app.badRequestResponse(w, r, fmt.Errorf("theadId must be a valid number"))
-	}
-
-	if len(threadId) == 0 {
-		app.badRequestResponse(w, r, fmt.Errorf("theadId is missing"))
 		return
 	}
 

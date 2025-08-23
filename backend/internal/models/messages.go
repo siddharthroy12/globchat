@@ -8,10 +8,13 @@ import (
 type Message struct {
 	ID        int       `json:"id"`
 	Text      string    `json:"text"`
-	ImageUrl  string    `json:"image_url"`
+	Image     string    `json:"image"`
 	ThreadId  int       `json:"thread_id"`
 	Reported  int       `json:"reported"`
+	IsFirst   bool      `json:"is_first"`
 	UserId    int       `json:"user_id"`
+	Username  string    `json:"username"`
+	UserImage string    `json:"user_image"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -19,17 +22,28 @@ type MessageModel struct {
 	DB *sql.DB
 }
 
-func (m *MessageModel) Create(text string, imageUrl string, threadId int, userId int) (int, error) {
-	stmt := "INSERT INTO messages (text, image_url, thread_id, user_id) VALUES($1, $2, $3, $4) RETURNING id"
+func (m *MessageModel) Create(text string, image string, threadId int, userId int, isFirst bool) (Message, error) {
+	stmt := "INSERT INTO messages (text, image, thread_id, user_id, is_first) VALUES($1, $2, $3, $4, $5) RETURNING id, text, image, thread_id, reported, is_first, user_id, created_at"
 
-	var id int
-	err := m.DB.QueryRow(stmt, text, imageUrl, threadId, userId).Scan(&id)
+	var message Message
+	err := m.DB.QueryRow(stmt, text, image, threadId, userId, isFirst).Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt)
 
 	if err != nil {
-		return 0, err
+		return Message{}, err
 	}
 
-	return id, nil
+	var user User
+
+	stmt = "SELECT username, image FROM users WHERE id = $1"
+	err = m.DB.QueryRow(stmt, userId).Scan(&user.Username, &user.Image)
+
+	if err != nil {
+		return Message{}, err
+	}
+	message.Username = user.Username
+	message.UserImage = user.Image
+
+	return message, nil
 }
 
 func (m *MessageModel) Delete(messageId int) error {
@@ -54,28 +68,43 @@ func (m *MessageModel) Delete(messageId int) error {
 	return nil
 }
 
-func (m *MessageModel) GetByID(messageId int) (*Message, error) {
-	stmt := "SELECT id, text, image_url, thread_id, user_id, created_at FROM messages WHERE id = $1"
+func (m *MessageModel) IncreaseReported(messageId int) error {
+	stmt := "UPDATE messages SET reported = reported + 1 WHERE id = $1"
 
-	message := &Message{}
-	err := m.DB.QueryRow(stmt, messageId).Scan(
-		&message.ID,
-		&message.Text,
-		&message.ImageUrl,
-		&message.ThreadId,
-		&message.UserId,
-		&message.CreatedAt,
-	)
+	result, err := m.DB.Exec(stmt, messageId)
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// If no rows were affected, the message didn't exist
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
+func (m *MessageModel) GetByID(messageId int) (Message, error) {
+	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE id = $1"
+
+	message := Message{}
+	err := m.DB.QueryRow(stmt, messageId).Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
 
 	if err != nil {
-		return nil, err
+		return Message{}, err
 	}
 
 	return message, nil
 }
 
-func (m *MessageModel) GetByThreadID(threadId int, limit int) ([]*Message, error) {
-	stmt := "SELECT id, text, image_url, thread_id, user_id, created_at FROM messages WHERE thread_id = $1 ORDER BY created_at DESC LIMIT $2"
+func (m *MessageModel) GetByThreadID(threadId int, limit int) ([]Message, error) {
+	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE thread_id = $1 ORDER BY created_at DESC LIMIT $2"
 
 	rows, err := m.DB.Query(stmt, threadId, limit)
 	if err != nil {
@@ -83,18 +112,11 @@ func (m *MessageModel) GetByThreadID(threadId int, limit int) ([]*Message, error
 	}
 	defer rows.Close()
 
-	messages := []*Message{}
+	messages := []Message{}
 
 	for rows.Next() {
-		message := &Message{}
-		err = rows.Scan(
-			&message.ID,
-			&message.Text,
-			&message.ImageUrl,
-			&message.ThreadId,
-			&message.UserId,
-			&message.CreatedAt,
-		)
+		message := Message{}
+		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
 		if err != nil {
 			return nil, err
 		}
@@ -108,9 +130,8 @@ func (m *MessageModel) GetByThreadID(threadId int, limit int) ([]*Message, error
 	return messages, nil
 }
 
-// GetBefore gets n messages before time t in a thread
-func (m *MessageModel) GetBeforeID(threadId int, id int, limit int) ([]*Message, error) {
-	stmt := "SELECT id, text, image_url, thread_id, user_id, created_at FROM messages WHERE thread_id = $1 AND id < $2 ORDER BY id DESC LIMIT $3"
+func (m *MessageModel) GetBeforeID(threadId int, id int, limit int) ([]Message, error) {
+	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE thread_id = $1 AND messages.id < $2 ORDER BY messages.id DESC LIMIT $3"
 
 	rows, err := m.DB.Query(stmt, threadId, id, limit)
 	if err != nil {
@@ -118,18 +139,12 @@ func (m *MessageModel) GetBeforeID(threadId int, id int, limit int) ([]*Message,
 	}
 	defer rows.Close()
 
-	messages := []*Message{}
+	messages := []Message{}
 
 	for rows.Next() {
-		message := &Message{}
-		err = rows.Scan(
-			&message.ID,
-			&message.Text,
-			&message.ImageUrl,
-			&message.ThreadId,
-			&message.UserId,
-			&message.CreatedAt,
-		)
+		message := Message{}
+		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
+
 		if err != nil {
 			return nil, err
 		}

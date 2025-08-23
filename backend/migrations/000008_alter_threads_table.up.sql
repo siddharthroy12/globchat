@@ -1,0 +1,1 @@
+ALTER TABLE threads ADD COLUMN message TEXT NOT NULL DEFAULT '';

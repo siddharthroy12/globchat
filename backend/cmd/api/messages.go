@@ -1,0 +1,112 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"strconv"
+)
+
+func (app *application) createMessageHandler(w http.ResponseWriter, r *http.Request) {
+
+	user := app.getUserFromRequst(r)
+
+	var input struct {
+		ThreadId int    `json:"thread_id"`
+		Text     string `json:"text"`
+		Image    string `json:"image"`
+	}
+
+	err := app.readJSONFromRequest(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	message, err := app.messageModel.Create(input.Text, input.Image, input.ThreadId, user.ID, false)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "create message")
+		return
+	}
+
+	app.writeJSON(w, 200, envelope{"message": message}, nil)
+}
+
+func (app *application) deleteMessageHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.getUserFromRequst(r)
+
+	messageId, err := strconv.Atoi(r.URL.Query().Get("messageId"))
+
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("messageId must be a valid number"))
+		return
+	}
+
+	message, err := app.messageModel.GetByID(messageId)
+
+	if err != nil {
+		app.notFoundResponse(w, r, fmt.Errorf("message not found"))
+		return
+	}
+
+	if message.UserId != user.ID {
+		app.badRequestResponse(w, r, fmt.Errorf("you do not own this message naughty boy"))
+		return
+	}
+
+	app.messageModel.Delete(messageId)
+
+	app.writeJSON(w, 200, envelope{"message": "message deleted"}, nil)
+}
+
+func (app *application) getMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	threadId, err := strconv.Atoi(r.URL.Query().Get("threadId"))
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("theadId must be a valid number"))
+		return
+	}
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("limit must be a valid number"))
+		return
+	}
+	messageId, err := strconv.Atoi(r.URL.Query().Get("messageId"))
+
+	if err != nil {
+		messages, err := app.messageModel.GetByThreadID(threadId, limit)
+		if err != nil {
+			app.serverErrorResponse(w, r, err, "get messages for thread id")
+			return
+		}
+
+		app.writeJSON(w, 200, envelope{"messages": messages}, nil)
+		return
+	}
+
+	messages, err := app.messageModel.GetBeforeID(threadId, messageId, limit)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "get messages for thread id")
+		return
+	}
+
+	app.writeJSON(w, 200, envelope{"messages": messages}, nil)
+}
+
+func (app *application) reportMessageHandler(w http.ResponseWriter, r *http.Request) {
+
+	messageId, err := strconv.Atoi(r.URL.Query().Get("messageId"))
+
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("messageId must be a valid number"))
+		return
+	}
+
+	if err != nil {
+		app.notFoundResponse(w, r, fmt.Errorf("message not found"))
+		return
+	}
+
+	app.messageModel.IncreaseReported(messageId)
+
+	app.writeJSON(w, 200, envelope{"message": "message deleted"}, nil)
+}

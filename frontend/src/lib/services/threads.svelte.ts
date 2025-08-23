@@ -5,7 +5,9 @@ export type Thread = {
   lat: number;
   long: number;
   user_id: number;
-  user_name: string;
+  message: string;
+  replies: number;
+  username: string;
   user_image: string;
   created_at: string;
 };

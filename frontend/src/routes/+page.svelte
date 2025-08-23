@@ -71,7 +71,6 @@
   }
 
   function mountAddChatComponent(long: number, lat: number) {
-    console.log("mounted");
     if (!map || addChatComponent) return;
 
     const componentDom = document.createElement("div");
@@ -110,8 +109,6 @@
       .addTo(map);
 
     addChatComponent = { marker, mount: componentMount };
-
-    console.log(`Mounted AddChat component at: ${lat}, ${long}`);
   }
 
   function removeAddChatComponent() {
@@ -122,8 +119,6 @@
 
     // Clear the reference
     addChatComponent = null;
-
-    console.log("Removed AddChat component");
   }
 
   async function handleMapUpdate() {
@@ -147,10 +142,6 @@
       const center = map.getCenter();
       const zoom = map.getZoom();
       const kmRadius = 50;
-
-      console.log(
-        `Fetching threads at ${center.lat}, ${center.lng} with ${kmRadius}km radius`
-      );
 
       // Fetch threads from API
       const threads = await fetchThreads(center.lat, center.lng, kmRadius);
@@ -212,8 +203,6 @@
       .addTo(map);
 
     mountedComponents.set(thread.id, { marker, mount: componentMount });
-
-    console.log(`Loaded chat component: ${thread.id}`);
   }
 
   function unloadChatComponent(id: number) {
@@ -225,8 +214,6 @@
 
     // Remove from our tracking
     mountedComponents.delete(id);
-
-    console.log(`Unloaded chat component: ${id}`);
   }
 
   function unloadAllChatComponents() {
@@ -239,7 +226,7 @@
   function zoomTo(long: number, lat: number) {
     map!.flyTo({
       center: [long, lat],
-      zoom: MIN_ZOOM_LEVEL,
+      zoom: MIN_ZOOM_LEVEL + 5,
       duration: 2000, // 2 second animation
       essential: true, // This animation is essential with respect to prefers-reduced-motion
     });
@@ -263,14 +250,12 @@
     }
 
     // Show loading state (optional - you might want to update UI)
-    console.log("Getting your location...");
 
     // Get current position
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { longitude, latitude } = position.coords;
 
-        console.log(`Found location: ${latitude}, ${longitude}`);
         zoomTo(longitude, latitude);
       },
       (error) => {

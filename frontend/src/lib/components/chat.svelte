@@ -1,8 +1,9 @@
 <script lang="ts">
   import Avatar from "./avatar.svelte";
-  import { mount, onMount } from "svelte";
+  import { mount, onDestroy, onMount } from "svelte";
   import Conversation from "./conversation.svelte";
   import type { Thread } from "$lib/services/threads.svelte";
+  import { getTimeAgo } from "$lib/helpers";
 
   let conversationOpen = $state(false);
   let showContentAnimation = $state(false);
@@ -12,9 +13,12 @@
     lat,
     long,
     user_image,
-    user_name,
+    username,
     created_at,
+    message,
+    replies,
     showAnimation,
+    id,
   }: Thread & { showAnimation: boolean } = $props();
 
   onMount(() => {
@@ -37,6 +41,7 @@
         lat,
         long,
         onCreate: () => {},
+        threadId: id,
         coordinates: {
           x: wrapper.getBoundingClientRect().x + 40,
           y: wrapper.getBoundingClientRect().y - 30,
@@ -66,10 +71,17 @@
       <Avatar iconSize={10} src={user_image} />
     </div>
     <div class="content">
-      <p class="username">{user_name} <span class="time">1 hr. ago</span></p>
+      <p class="username">
+        {username} <span class="time">{getTimeAgo(created_at)}</span>
+      </p>
       <p class="last-chat"></p>
-      <p>I live here</p>
-      <p class="time">1 reply</p>
+      <p>{message}</p>
+      {#if replies > 0}
+        <p class="time">
+          {replies}
+          {#if replies > 1}replies{:else}reply{/if}
+        </p>
+      {/if}
     </div>
   </button>
 </div>

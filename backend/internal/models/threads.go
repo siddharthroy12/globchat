@@ -11,6 +11,8 @@ type Thread struct {
 	ID        int       `json:"id"`
 	Lat       float64   `json:"lat"`
 	Long      float64   `json:"long"`
+	Message   string    `json:"message"`
+	Replies   int       `json:"replies"`
 	UserId    int       `json:"user_id"`
 	Username  string    `json:"username"`
 	UserImage string    `json:"user_image"`
@@ -21,11 +23,11 @@ type ThreadModel struct {
 	DB *sql.DB
 }
 
-func (m *ThreadModel) Create(lat float64, long float64, userId int) (Thread, error) {
-	stmt := "INSERT INTO threads (lat, long, user_id) VALUES($1, $2, $3) RETURNING id, lat, long, user_id, created_at"
+func (m *ThreadModel) Create(message string, lat float64, long float64, userId int) (Thread, error) {
+	stmt := "INSERT INTO threads (message, lat, long, user_id) VALUES($1, $2, $3, $4) RETURNING id, lat, long, message, user_id, created_at"
 
 	var thread Thread
-	err := m.DB.QueryRow(stmt, lat, long, userId).Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.UserId, &thread.CreatedAt)
+	err := m.DB.QueryRow(stmt, message, lat, long, userId).Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.Message, &thread.UserId, &thread.CreatedAt)
 
 	if err != nil {
 		return Thread{}, err
@@ -57,12 +59,12 @@ func (m *ThreadModel) Delete(threadId int) error {
 }
 
 func (m *ThreadModel) GetById(threadId int) (Thread, error) {
-	stmt := "SELECT threads.id, lat, long, user_id, threads.created_at, users.username, users.image FROM threads INNER JOIN users ON users.id = threads.user_id WHERE user_id = $1"
+	stmt := "SELECT threads.id, lat, long, message, user_id, threads.created_at, users.username, users.image FROM threads INNER JOIN users ON users.id = threads.user_id WHERE user_id = $1"
 
 	row := m.DB.QueryRow(stmt, threadId)
 
 	thread := Thread{}
-	err := row.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
+	err := row.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.Message, &thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
 
 	if err != nil {
 		return Thread{}, err
@@ -90,7 +92,7 @@ func (m *ThreadModel) GetRandomThread() (Thread, error) {
 		return Thread{}, err
 	}
 
-	stmt := `SELECT threads.id, lat, long, user_id, threads.created_at, users.username, users.image 
+	stmt := `SELECT threads.id, lat, long, message, user_id, threads.created_at, users.username, users.image 
 			 FROM threads 
 			 INNER JOIN users ON users.id = threads.user_id 
 			 LIMIT 1 OFFSET $1`
@@ -98,7 +100,7 @@ func (m *ThreadModel) GetRandomThread() (Thread, error) {
 	row := m.DB.QueryRow(stmt, randomOffset.Int64())
 
 	thread := Thread{}
-	err = row.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
+	err = row.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.Message, &thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
 
 	if err != nil {
 		return Thread{}, err
@@ -106,8 +108,74 @@ func (m *ThreadModel) GetRandomThread() (Thread, error) {
 	return thread, nil
 }
 
+func (m *ThreadModel) IncreaseReplies(threadId int) error {
+	stmt := "UPDATE threads SET replies = replies + 1 WHERE id = $1"
+
+	result, err := m.DB.Exec(stmt, threadId)
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// If no rows were affected, the message didn't exist
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
+func (m *ThreadModel) DecreaseReplies(threadId int) error {
+	stmt := "UPDATE threads SET replies = replies - 1 WHERE id = $1"
+
+	result, err := m.DB.Exec(stmt, threadId)
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// If no rows were affected, the message didn't exist
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
+func (m *ThreadModel) SetReplies(threadId int, replies int) error {
+	stmt := "UPDATE threads SET replies = $1 WHERE id = $2"
+
+	result, err := m.DB.Exec(stmt, replies, threadId)
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// If no rows were affected, the message didn't exist
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
 func (m *ThreadModel) GetAllByUserId(userId int) ([]*Thread, error) {
-	stmt := "SELECT threads.id, lat, long, user_id, threads.created_at, users.username, users.image FROM threads INNER JOIN users ON users.id = threads.user_id WHERE user_id = $1 ORDER BY created_at DESC"
+	stmt := "SELECT threads.id, lat, long, message, user_id, threads.created_at, users.username, users.image FROM threads INNER JOIN users ON users.id = threads.user_id WHERE user_id = $1 ORDER BY created_at DESC"
 
 	rows, err := m.DB.Query(stmt, userId)
 	if err != nil {
@@ -119,7 +187,7 @@ func (m *ThreadModel) GetAllByUserId(userId int) ([]*Thread, error) {
 
 	for rows.Next() {
 		thread := &Thread{}
-		err = rows.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
+		err = rows.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.Message, &thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +202,7 @@ func (m *ThreadModel) GetAllByUserId(userId int) ([]*Thread, error) {
 }
 
 func (m *ThreadModel) GetByLocation(minLat, maxLat, minLong, maxLong float64) ([]*Thread, error) {
-	stmt := `SELECT threads.id, lat, long, user_id, threads.created_at, users.username, users.image
+	stmt := `SELECT threads.id, lat, long, message, user_id, threads.created_at, users.username, users.image
 			 FROM threads INNER JOIN users ON users.id = threads.user_id
 			 WHERE lat BETWEEN $1 AND $2 
 			 AND long BETWEEN $3 AND $4 
@@ -150,7 +218,7 @@ func (m *ThreadModel) GetByLocation(minLat, maxLat, minLong, maxLong float64) ([
 
 	for rows.Next() {
 		thread := &Thread{}
-		err = rows.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.UserId, &thread.CreatedAt)
+		err = rows.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.Message, &thread.UserId, &thread.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +235,7 @@ func (m *ThreadModel) GetByLocation(minLat, maxLat, minLong, maxLong float64) ([
 func (m *ThreadModel) GetByLocationRadius(centerLat, centerLong, radiusKm float64) ([]*Thread, error) {
 	// Using the spherical law of cosines for distance calculation
 	// This is an approximation suitable for most use cases
-	stmt := `SELECT threads.id, lat, long, user_id, threads.created_at, users.username, users.image
+	stmt := `SELECT threads.id, lat, long, message, user_id, threads.created_at, users.username, users.image
 			 FROM threads INNER JOIN users ON users.id = threads.user_id
 			 WHERE (
 				6371 * acos(
@@ -188,7 +256,7 @@ func (m *ThreadModel) GetByLocationRadius(centerLat, centerLong, radiusKm float6
 
 	for rows.Next() {
 		thread := &Thread{}
-		err = rows.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
+		err = rows.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.Message, &thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
 		if err != nil {
 			return nil, err
 		}
