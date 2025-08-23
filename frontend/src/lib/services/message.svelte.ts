@@ -45,10 +45,11 @@ export async function reportMessage(messageId: number) {
 export async function getMessages(
   threadId: number,
   limit: number,
-  messageId?: number
+  messageId?: number,
+  direction: "before" | "after" = "before"
 ): Promise<Message[]> {
   const res = await fetch(
-    `/api/v1/messages?threadId=${threadId}&limit=${limit}&messageId=${messageId}`,
+    `/api/v1/messages?threadId=${threadId}&limit=${limit}&messageId=${messageId}&direction=${direction}`,
     {
       headers: getAuthHeaders(),
     }

@@ -100,7 +100,6 @@ func (m *WebSocketRoomManager) leaveAllRooms(c *websocket.Conn) {
 }
 
 func (app *application) websocketConnectionHandler(w http.ResponseWriter, r *http.Request) {
-	println("got hit!")
 	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		Subprotocols: []string{"wompwomp"},
 	})

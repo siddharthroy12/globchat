@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"globechat.live/internal/models"
 )
 
 func (app *application) createMessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -94,10 +96,21 @@ func (app *application) getMessagesHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	messages, err := app.messageModel.GetBeforeID(threadId, messageId, limit)
-	if err != nil {
-		app.serverErrorResponse(w, r, err, "get messages for thread id")
-		return
+	direction := r.URL.Query().Get("direction")
+
+	var messages []models.Message
+	if direction == "after" {
+		messages, err = app.messageModel.GetAfterID(threadId, messageId, limit)
+		if err != nil {
+			app.serverErrorResponse(w, r, err, "get messages before thread id")
+			return
+		}
+	} else {
+		messages, err = app.messageModel.GetBeforeID(threadId, messageId, limit)
+		if err != nil {
+			app.serverErrorResponse(w, r, err, "get messages before thread id")
+			return
+		}
 	}
 
 	app.writeJSON(w, 200, envelope{"messages": messages}, nil)

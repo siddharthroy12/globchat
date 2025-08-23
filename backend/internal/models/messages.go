@@ -179,3 +179,31 @@ func (m *MessageModel) GetBeforeID(threadId int, id int, limit int) ([]Message, 
 
 	return messages, nil
 }
+
+func (m *MessageModel) GetAfterID(threadId int, id int, limit int) ([]Message, error) {
+	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE thread_id = $1 AND messages.id > $2 ORDER BY messages.id ASC LIMIT $3"
+
+	rows, err := m.DB.Query(stmt, threadId, id, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	messages := []Message{}
+
+	for rows.Next() {
+		message := Message{}
+		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
+
+		if err != nil {
+			return nil, err
+		}
+		messages = append(messages, message)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return messages, nil
+}

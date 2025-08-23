@@ -10,7 +10,7 @@
     getMessages,
     type Message,
   } from "$lib/services/message.svelte";
-  import { onMount, tick } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import MessageBubble from "./message-bubble.svelte";
   import { getUserData } from "$lib/services/auth.svelte";
   import { joinThread } from "$lib/services/websocket";
@@ -49,6 +49,7 @@
   let showSendLoading = $state(false);
   let closeConnection = $state(() => {});
   let isSendButtonDisabled = $derived(inputValue.trim() == "");
+  let closedForever = false;
 
   // References for scroll management
   // svelte-ignore non_reactive_update
@@ -121,7 +122,7 @@
 
     try {
       if (threadId) {
-        let m = await getMessages(threadId, 10, oldestMessageId);
+        let m = await getMessages(threadId, 10, oldestMessageId, "before");
         m = m.reverse();
         messages = [...m, ...messages]; // Prepend older messages
 
@@ -135,27 +136,77 @@
     showLoadingMoreMessages = false;
   }
 
+  async function loadNewerMessages(newestMessageId: number) {
+    try {
+      if (threadId) {
+        let newMessages = await getMessages(
+          threadId,
+          10,
+          newestMessageId,
+          "after"
+        );
+
+        // Remove duplicates by filtering out messages that already exist
+        const existingMessageIds = new Set(messages.map((m) => m.id));
+        const uniqueNewMessages = newMessages.filter(
+          (m) => !existingMessageIds.has(m.id)
+        );
+
+        // Combine and sort by created_at timestamp (newest at bottom)
+        const combinedMessages = [...messages, ...uniqueNewMessages];
+        combinedMessages.sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+
+        messages = combinedMessages;
+        await scrollToBottom();
+      }
+    } catch {}
+  }
+
   function openConnection() {
     if (threadId) {
       closeConnection = joinThread(
         threadId,
-        () => {
-          // TODO: load more newer messages
+        async (newMessage: Message) => {
+          // Load newer messages to catch up on anything missed during disconnection
+          if (messages.length > 0) {
+            const newestMessage = messages[messages.length - 1];
+            loadNewerMessages(newestMessage.id);
+          }
         },
         () => {
-          // If connection got disconnected for some reason connect again
-          openConnection();
+          if (!closedForever) {
+            // If connection got disconnected for some reason connect again
+            openConnection();
+            // Load newer messages to catch up on anything missed during disconnection
+            if (messages.length > 0) {
+              const newestMessage = messages[messages.length - 1];
+              loadNewerMessages(newestMessage.id);
+            }
+          }
         }
       );
     }
   }
 
+  onDestroy(() => {
+    closeConnection();
+  });
+
   async function sendMessage() {
     try {
       if (threadId) {
         const m = await createMessage(threadId, inputValue);
-        messages = [...messages, m]; // Add new message
-        // await scrollToBottom(); // Auto-scroll to show new message
+
+        // Check if message already exists (in case of WebSocket race condition)
+        const existingMessageIds = new Set(messages.map((msg) => msg.id));
+        if (!existingMessageIds.has(m.id)) {
+          messages = [...messages, m]; // Add new message
+        }
+
+        await scrollToBottom(); // Auto-scroll to show new message
       }
     } catch {}
   }
@@ -171,7 +222,6 @@
       await onCreateThread();
     } else {
       await sendMessage();
-      scrollToBottom();
     }
     inputValue = "";
     showSendLoading = false;
@@ -188,10 +238,41 @@
       onDelete();
     }
   }
-  // Then add this function in your <script> section:
+
+  async function close() {
+    closeConnection();
+    onClose();
+    closedForever = true;
+  }
+
+  // Copy thread link to clipboard
+  async function copyThreadLink() {
+    if (threadId) {
+      const threadUrl = `${window.location.origin}/thread/${threadId}`;
+      try {
+        await navigator.clipboard.writeText(threadUrl);
+        // Could add a toast notification here
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = threadUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+    }
+  }
+
+  // Handle message deletion
+  function handleMessageDelete(messageId: number) {
+    messages = messages.filter((m) => m.id !== messageId);
+  }
+
+  // Handle keydown events
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      onClose();
+      close();
     }
   }
 </script>
@@ -216,7 +297,7 @@
 </dialog>
 <div
   class="w-[100vw] height-[100dvh] fixed top-0 left-0 right-0 bottom-0 overflow-hidden z-[99]"
-  onclick={onClose}
+  onclick={close}
 >
   <div
     class="container shadow-md fixed rounded-md w-[336px]"
@@ -251,11 +332,13 @@
                     <a><Trash size={14} />Delete Thread</a>
                   </li>
                 {/if}
-                <li><a><Copy size={14} />Copy Link</a></li>
+                <li onclick={copyThreadLink}>
+                  <a><Copy size={14} />Copy Link</a>
+                </li>
               </ul>
             </div>
           {/if}
-          <button class="icon-btn" onclick={onClose}>
+          <button class="icon-btn" onclick={close}>
             <X />
           </button>
         </div>
@@ -282,9 +365,7 @@
           {#each messages as message, index (message.id)}
             <MessageBubble
               {message}
-              onDelete={() => {
-                messages = messages.splice(index, 1);
-              }}
+              onDelete={() => handleMessageDelete(message.id)}
             />
           {/each}
         </div>
