@@ -13,6 +13,7 @@
   import { onMount, tick } from "svelte";
   import MessageBubble from "./message-bubble.svelte";
   import { getUserData } from "$lib/services/auth.svelte";
+  import { joinThread } from "$lib/services/websocket";
 
   type ConversationProps = {
     coordinates: {
@@ -46,6 +47,7 @@
   let showFullLoading = $state(false);
   let showLoadingMoreMessages = $state(false);
   let showSendLoading = $state(false);
+  let closeConnection = $state(() => {});
   let isSendButtonDisabled = $derived(inputValue.trim() == "");
 
   // References for scroll management
@@ -57,6 +59,7 @@
   onMount(() => {
     if (!create) {
       firstLoadMessage();
+      openConnection();
     }
   });
 
@@ -97,7 +100,6 @@
 
   async function firstLoadMessage() {
     showFullLoading = true;
-    console.log(messagesContainer); //  Here it is not null
 
     try {
       if (threadId) {
@@ -131,6 +133,21 @@
     } catch {}
 
     showLoadingMoreMessages = false;
+  }
+
+  function openConnection() {
+    if (threadId) {
+      closeConnection = joinThread(
+        threadId,
+        () => {
+          // TODO: load more newer messages
+        },
+        () => {
+          // If connection got disconnected for some reason connect again
+          openConnection();
+        }
+      );
+    }
   }
 
   async function sendMessage() {

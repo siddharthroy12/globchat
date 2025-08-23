@@ -29,6 +29,12 @@ func (app *application) createMessageHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	app.roomManager.notifyRoom(input.ThreadId, WebsocketConnectionMessage{
+		Type:   "new-message",
+		RoomID: input.ThreadId,
+		Data:   message,
+	})
+
 	app.writeJSON(w, 200, envelope{"message": message}, nil)
 }
 
@@ -106,12 +112,12 @@ func (app *application) reportMessageHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	err = app.messageModel.IncreaseReported(messageId)
+
 	if err != nil {
 		app.notFoundResponse(w, r, fmt.Errorf("message not found"))
 		return
 	}
-
-	app.messageModel.IncreaseReported(messageId)
 
 	app.writeJSON(w, 200, envelope{"message": "message deleted"}, nil)
 }

@@ -24,6 +24,9 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/api/v1/messages", app.getMessagesHandler)
 	router.HandlerFunc(http.MethodPost, "/api/v1/messages/report", app.requireAuthentication(app.reportMessageHandler))
 
+	// Websocket
+	router.HandlerFunc(http.MethodGet, "/api/v1/ws", app.websocketConnectionHandler)
+
 	// Media files route (serves static files)
 	router.HandlerFunc(http.MethodGet, "/media/*filepath", app.mediaHandler)
 

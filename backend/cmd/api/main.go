@@ -31,6 +31,7 @@ type application struct {
 	sessionModel models.SessionModel
 	threadModel  models.ThreadModel
 	messageModel models.MessageModel
+	roomManager  WebSocketRoomManager
 }
 
 func openDB(cfg config) (*sql.DB, error) {
@@ -101,6 +102,7 @@ func main() {
 		messageModel: models.MessageModel{
 			DB: db,
 		},
+		roomManager: *NewWebSocketRoomManager(),
 	}
 
 	srv := http.Server{
