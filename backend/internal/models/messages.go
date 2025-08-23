@@ -113,7 +113,7 @@ func (m *MessageModel) IncreaseReported(messageId int) error {
 }
 
 func (m *MessageModel) GetByID(messageId int) (Message, error) {
-	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE id = $1"
+	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE messages.id = $1"
 
 	message := Message{}
 	err := m.DB.QueryRow(stmt, messageId).Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)

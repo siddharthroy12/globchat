@@ -19,6 +19,7 @@
     replies,
     showAnimation,
     id,
+    user_id,
     onDelete,
   }: Thread & { showAnimation: boolean; onDelete: () => void } = $props();
 
@@ -61,6 +62,7 @@
         },
         onCreate: () => {},
         threadId: id,
+        threadUserId: user_id,
         coordinates: {
           x: x,
           y: y,

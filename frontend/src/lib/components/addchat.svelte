@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, mount, onDestroy } from "svelte";
+  import { onMount, mount } from "svelte";
   import Conversation from "./conversation.svelte";
   import type { Thread } from "$lib/services/threads.svelte";
   let wrapper: HTMLElement;
@@ -34,6 +34,7 @@
       props: {
         lat,
         long,
+        onDelete: () => {},
         onCreate: (thread) => {
           onCreate(thread);
           if (el) document.body.removeChild(el);

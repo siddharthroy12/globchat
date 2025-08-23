@@ -12,6 +12,7 @@
   } from "$lib/services/message.svelte";
   import { onMount, tick } from "svelte";
   import MessageBubble from "./message-bubble.svelte";
+  import { getUserData } from "$lib/services/auth.svelte";
 
   type ConversationProps = {
     coordinates: {
@@ -25,6 +26,7 @@
     onDelete: () => void;
     create: boolean;
     threadId?: number;
+    threadUserId?: number;
   };
 
   let {
@@ -35,6 +37,7 @@
     lat,
     long,
     threadId,
+    threadUserId,
     onDelete,
   }: ConversationProps = $props();
 
@@ -226,9 +229,11 @@
                 tabindex="0"
                 class="dropdown-content menu bg-base-100 rounded-box z-1 w-[160px] p-2 shadow-sm"
               >
-                <li class="text-error" onclick={openDeleteModal}>
-                  <a><Trash size={14} />Delete Thread</a>
-                </li>
+                {#if threadUserId == getUserData()?.id}
+                  <li class="text-error" onclick={openDeleteModal}>
+                    <a><Trash size={14} />Delete Thread</a>
+                  </li>
+                {/if}
                 <li><a><Copy size={14} />Copy Link</a></li>
               </ul>
             </div>
@@ -257,8 +262,13 @@
             </div>
           {/if}
 
-          {#each messages as message}
-            <MessageBubble {message} />
+          {#each messages as message, index (message.id)}
+            <MessageBubble
+              {message}
+              onDelete={() => {
+                messages = messages.splice(index, 1);
+              }}
+            />
           {/each}
         </div>
       {/if}

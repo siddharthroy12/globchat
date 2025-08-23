@@ -54,6 +54,11 @@ func (app *application) deleteMessageHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	if message.IsFirst {
+		app.badRequestResponse(w, r, fmt.Errorf("you are trying to do something funny i know it"))
+		return
+	}
+
 	app.messageModel.Delete(messageId)
 
 	app.writeJSON(w, 200, envelope{"message": "message deleted"}, nil)
