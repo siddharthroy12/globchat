@@ -37,6 +37,20 @@
   function showConversation(e: Event) {
     conversationOpen = true;
     const el = document.createElement("div");
+    const conversationBoxWidth = 336;
+    const conversationBoxHeight = 417;
+    let x = wrapper.getBoundingClientRect().x;
+    let y = wrapper.getBoundingClientRect().y;
+    if (x + conversationBoxWidth <= window.innerWidth) {
+      x += 40;
+    } else {
+      x = x - (conversationBoxWidth + 10);
+    }
+    if (y + conversationBoxHeight <= window.innerHeight) {
+      y -= 30;
+    } else {
+      y -= conversationBoxHeight;
+    }
     mount(Conversation, {
       props: {
         lat,
@@ -48,8 +62,8 @@
         onCreate: () => {},
         threadId: id,
         coordinates: {
-          x: wrapper.getBoundingClientRect().x + 40,
-          y: wrapper.getBoundingClientRect().y - 30,
+          x: x,
+          y: y,
         },
         create: false,
         onClose: () => {

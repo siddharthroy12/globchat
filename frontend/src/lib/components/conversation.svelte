@@ -168,7 +168,15 @@
       onDelete();
     }
   }
+  // Then add this function in your <script> section:
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      onClose();
+    }
+  }
 </script>
+
+<svelte:window on:keydown={handleKeydown} />
 
 <dialog
   id="delete_confimation_modal"

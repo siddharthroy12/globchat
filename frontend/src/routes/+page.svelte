@@ -40,6 +40,7 @@
       zoom: 0,
       container: "map",
       attributionControl: false,
+      doubleClickZoom: false,
     });
 
     // Listen for zoom and move events
