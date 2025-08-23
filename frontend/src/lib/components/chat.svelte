@@ -19,7 +19,8 @@
     replies,
     showAnimation,
     id,
-  }: Thread & { showAnimation: boolean } = $props();
+    onDelete,
+  }: Thread & { showAnimation: boolean; onDelete: () => void } = $props();
 
   onMount(() => {
     if (showAnimation) {
@@ -40,6 +41,10 @@
       props: {
         lat,
         long,
+        onDelete: () => {
+          document.body.removeChild(el);
+          onDelete();
+        },
         onCreate: () => {},
         threadId: id,
         coordinates: {

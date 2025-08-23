@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"globechat.live/internal/models"
 )
 
 func (app *application) createThreadHandler(w http.ResponseWriter, r *http.Request) {
@@ -90,19 +93,21 @@ func (app *application) getRandomThread(w http.ResponseWriter, r *http.Request) 
 func (app *application) deleteThreadHandler(w http.ResponseWriter, r *http.Request) {
 	user := app.getUserFromRequst(r)
 
-	threadId := r.URL.Query().Get("threadId")
-
-	i, err := strconv.Atoi(threadId)
+	threadId, err := strconv.Atoi(r.URL.Query().Get("threadId"))
 
 	if err != nil {
 		app.badRequestResponse(w, r, fmt.Errorf("theadId must be a valid number"))
 		return
 	}
 
-	thread, err := app.threadModel.GetById(i)
+	thread, err := app.threadModel.GetById(threadId)
 
 	if err != nil {
-		app.notFoundResponse(w, r, fmt.Errorf("thread not found"))
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFoundResponse(w, r, fmt.Errorf("thread not found"))
+			return
+		}
+		app.serverErrorResponse(w, r, err, "delete thread")
 		return
 	}
 
@@ -110,8 +115,15 @@ func (app *application) deleteThreadHandler(w http.ResponseWriter, r *http.Reque
 		app.badRequestResponse(w, r, fmt.Errorf("you do not own this thread naughty boy"))
 		return
 	}
-
-	app.threadModel.Delete(i)
-
+	err = app.messageModel.DeleteByThreadID(threadId)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "delete messages using thread id")
+		return
+	}
+	err = app.threadModel.Delete(threadId)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "delete thread")
+		return
+	}
 	app.writeJSON(w, 200, envelope{"message": "thread deleted"}, nil)
 }

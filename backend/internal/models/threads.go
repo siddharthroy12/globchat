@@ -3,6 +3,7 @@ package models
 import (
 	"crypto/rand"
 	"database/sql"
+	"errors"
 	"math/big"
 	"time"
 )
@@ -49,26 +50,43 @@ func (m *ThreadModel) Create(message string, lat float64, long float64, userId i
 func (m *ThreadModel) Delete(threadId int) error {
 	stmt := "DELETE FROM threads WHERE id = $1"
 
-	_, err := m.DB.Exec(stmt, threadId)
-
+	result, err := m.DB.Exec(stmt, threadId)
 	if err != nil {
 		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrNoRecord
 	}
 
 	return nil
 }
 
 func (m *ThreadModel) GetById(threadId int) (Thread, error) {
-	stmt := "SELECT threads.id, lat, long, message, user_id, threads.created_at, users.username, users.image FROM threads INNER JOIN users ON users.id = threads.user_id WHERE user_id = $1"
+	stmt := `SELECT threads.id, lat, long, message, user_id, threads.created_at, 
+             users.username, users.image 
+             FROM threads 
+             INNER JOIN users ON users.id = threads.user_id 
+             WHERE threads.id = $1`
 
 	row := m.DB.QueryRow(stmt, threadId)
 
 	thread := Thread{}
-	err := row.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.Message, &thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
+	err := row.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.Message,
+		&thread.UserId, &thread.CreatedAt, &thread.Username, &thread.UserImage)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Thread{}, ErrNoRecord // Convert to your custom error
+		}
 		return Thread{}, err
 	}
+
 	return thread, nil
 }
 

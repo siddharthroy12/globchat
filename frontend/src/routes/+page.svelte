@@ -192,7 +192,13 @@
 
     const componentMount = mount(Chat, {
       target: componentDom,
-      props: { ...thread, showAnimation },
+      props: {
+        ...thread,
+        showAnimation,
+        onDelete: () => {
+          unloadChatComponent(thread.id);
+        },
+      },
     });
 
     const marker = new maplibregl.Marker({

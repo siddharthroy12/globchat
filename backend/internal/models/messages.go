@@ -68,6 +68,28 @@ func (m *MessageModel) Delete(messageId int) error {
 	return nil
 }
 
+func (m *MessageModel) DeleteByThreadID(threadId int) error {
+	stmt := "DELETE FROM messages WHERE thread_id = $1"
+
+	result, err := m.DB.Exec(stmt, threadId)
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// If no rows were affected, the message didn't exist
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
 func (m *MessageModel) IncreaseReported(messageId int) error {
 	stmt := "UPDATE messages SET reported = reported + 1 WHERE id = $1"
 

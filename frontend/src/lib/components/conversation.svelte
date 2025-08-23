@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { ArrowUp, Ellipsis, Image, X } from "@lucide/svelte";
-  import Avatar from "./avatar.svelte";
-  import { createThread, type Thread } from "$lib/services/threads.svelte";
+  import { ArrowUp, Copy, Ellipsis, Image, Trash, X } from "@lucide/svelte";
+  import {
+    createThread,
+    deleteThread,
+    type Thread,
+  } from "$lib/services/threads.svelte";
   import {
     createMessage,
     getMessages,
@@ -19,6 +22,7 @@
     long: number;
     onClose: () => void;
     onCreate: (thread: Thread) => void;
+    onDelete: () => void;
     create: boolean;
     threadId?: number;
   };
@@ -31,6 +35,7 @@
     lat,
     long,
     threadId,
+    onDelete,
   }: ConversationProps = $props();
 
   let inputValue = $state("");
@@ -41,13 +46,12 @@
   let isSendButtonDisabled = $derived(inputValue.trim() == "");
 
   // References for scroll management
+  // svelte-ignore non_reactive_update
   let messagesContainer: HTMLDivElement | undefined;
   let isUserScrolling = $state(false);
   let hasFirstMessage = $derived(messages.some((m) => m.is_first));
 
   onMount(() => {
-    console.log(messagesContainer); // Here it is not null
-
     if (!create) {
       firstLoadMessage();
     }
@@ -58,7 +62,6 @@
     await tick();
 
     if (messagesContainer && !isUserScrolling) {
-      console.log("scrolling");
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
   }
@@ -153,8 +156,36 @@
     inputValue = "";
     showSendLoading = false;
   }
+
+  function openDeleteModal() {
+    // @ts-ignore
+    delete_confimation_modal.showModal();
+  }
+
+  async function onDeleteConfirmation() {
+    if (threadId != undefined) {
+      await deleteThread(threadId);
+      onDelete();
+    }
+  }
 </script>
 
+<dialog
+  id="delete_confimation_modal"
+  class="modal modal-bottom sm:modal-middle"
+>
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">Are you sure?</h3>
+    <p class="py-4">Are you sure you want to delete this thread?</p>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn">Close</button>
+        <button class="btn btn-error" onclick={onDeleteConfirmation}>Yes</button
+        >
+      </form>
+    </div>
+  </div>
+</dialog>
 <div
   class="w-[100vw] height-[100dvh] fixed top-0 left-0 right-0 bottom-0 overflow-hidden z-[99]"
   onclick={onClose}
@@ -179,11 +210,21 @@
         </div>
         <div class="flex items-center gap-2">
           {#if !create}
-            <button class="icon-btn">
-              <Ellipsis />
-            </button>
+            <div class="dropdown">
+              <div tabindex="0" role="button" class="icon-btn m-1">
+                <Ellipsis />
+              </div>
+              <ul
+                tabindex="0"
+                class="dropdown-content menu bg-base-100 rounded-box z-1 w-[160px] p-2 shadow-sm"
+              >
+                <li class="text-error" onclick={openDeleteModal}>
+                  <a><Trash size={14} />Delete Thread</a>
+                </li>
+                <li><a><Copy size={14} />Copy Link</a></li>
+              </ul>
+            </div>
           {/if}
-
           <button class="icon-btn" onclick={onClose}>
             <X />
           </button>
@@ -215,9 +256,6 @@
       {/if}
 
       <div class="bottom p-3 flex gap-2 py-4">
-        <div>
-          <Avatar iconSize={10} />
-        </div>
         <div class="flex flex-col w-full">
           <textarea
             class="textarea w-full text-input"
