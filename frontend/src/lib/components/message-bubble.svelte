@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { getUserData } from "$lib/services/auth.svelte";
+  import {
+    AuthenticationStatus,
+    getAuthenticationStatus,
+    getUserData,
+  } from "$lib/services/auth.svelte";
   import type { Message } from "$lib/services/message.svelte";
   import { CircleAlert, Copy, Ellipsis, Trash } from "@lucide/svelte";
   import Avatar from "./avatar.svelte";
@@ -64,21 +68,22 @@
     <time class="text-xs opacity-50">{formatTime(message.created_at)}</time>
   </div>
   <div class="chat-bubble bg-primary text-white">{message.text}</div>
-
-  <div
-    class="absolute left-0 top-0 translate-y-[-50%] p-1 bg-base-100 rounded-xl transition-opacity message-options"
-    class:opacity-0={!dropdownOpened}
-    class:opacity-100={dropdownOpened}
-    class:group-hover:opacity-100={!dropdownOpened}
-  >
-    <button
-      bind:this={dropdownButton}
-      class="btn btn-ghost rounded-sm w-[25px] h-[25px] p-0"
-      onclick={openDropdown}
+  {#if getAuthenticationStatus() === AuthenticationStatus.LoggedIn}
+    <div
+      class="absolute left-0 top-0 translate-y-[-50%] p-1 bg-base-100 rounded-xl transition-opacity message-options"
+      class:opacity-0={!dropdownOpened}
+      class:opacity-100={dropdownOpened}
+      class:group-hover:opacity-100={!dropdownOpened}
     >
-      <Ellipsis size={18} />
-    </button>
-  </div>
+      <button
+        bind:this={dropdownButton}
+        class="btn btn-ghost rounded-sm w-[25px] h-[25px] p-0"
+        onclick={openDropdown}
+      >
+        <Ellipsis size={18} />
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>

@@ -12,7 +12,11 @@
   } from "$lib/services/message.svelte";
   import { onDestroy, onMount, tick } from "svelte";
   import MessageBubble from "./message-bubble.svelte";
-  import { getUserData } from "$lib/services/auth.svelte";
+  import {
+    AuthenticationStatus,
+    getAuthenticationStatus,
+    getUserData,
+  } from "$lib/services/auth.svelte";
   import { joinThread } from "$lib/services/websocket";
 
   type ConversationProps = {
@@ -372,32 +376,36 @@
       {/if}
 
       <div class="bottom p-3 flex gap-2 py-4">
-        <div class="flex flex-col w-full">
-          <textarea
-            class="textarea w-full text-input"
-            placeholder="Write"
-            disabled={showSendLoading}
-            bind:value={inputValue}
-          ></textarea>
-          <div class="flex items-center justify-between p-2 bottom-buttons">
-            <div class="flex items-center gap2">
-              <!-- <button class="icon-btn">
-              <Image size={16} />
-            </button> -->
+        {#if getAuthenticationStatus() === AuthenticationStatus.LoggedIn}
+          <div class="flex flex-col w-full">
+            <textarea
+              class="textarea w-full text-input"
+              placeholder="Write"
+              disabled={showSendLoading}
+              bind:value={inputValue}
+            ></textarea>
+            <div class="flex items-center justify-between p-2 bottom-buttons">
+              <div class="flex items-center gap2"></div>
+              <button
+                class="btn btn-circle btn-primary w-[24px] h-[24px] p-1"
+                disabled={isSendButtonDisabled || showSendLoading}
+                onclick={onSend}
+              >
+                {#if showSendLoading}
+                  <span class="loading loading-spinner loading-xs"></span>
+                {:else}
+                  <ArrowUp />
+                {/if}
+              </button>
             </div>
-            <button
-              class="btn btn-circle btn-primary w-[24px] h-[24px] p-1"
-              disabled={isSendButtonDisabled || showSendLoading}
-              onclick={onSend}
-            >
-              {#if showSendLoading}
-                <span class="loading loading-spinner loading-xs"></span>
-              {:else}
-                <ArrowUp />
-              {/if}
-            </button>
           </div>
-        </div>
+        {:else}
+          <div
+            class="bg-base-100 w-full p-3 bottom-border flex items-center justify-center"
+          >
+            Log In to join this conversation
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
@@ -426,6 +434,11 @@
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
     resize: none;
+  }
+
+  .bottom-border {
+    border: 1px solid color-mix(in oklab, var(--color-base-content) 20%, #0000);
+    border-radius: var(--radius-field);
   }
 
   .bottom-buttons {

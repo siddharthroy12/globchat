@@ -9,7 +9,12 @@
     fetchRandomThread,
     fetchThreads,
   } from "$lib/services/threads.svelte";
-  import { ZoomIn } from "@lucide/svelte";
+  import { DoorOpen, ZoomIn } from "@lucide/svelte";
+  import {
+    AuthenticationStatus,
+    getAuthenticationStatus,
+    getUserData,
+  } from "$lib/services/auth.svelte";
 
   let map: null | maplibregl.Map = null;
   let mountedComponents: Map<
@@ -343,7 +348,17 @@
     class="alert fixed top-[10px] right-[50%] translate-x-[50%] rounded-full"
   >
     <ZoomIn />
-    <span>Zoom in more to view and create chats </span>
+    <span>Zoom in more to view and create conversations </span>
+  </div>
+{/if}
+
+{#if zoomedInEnough && getAuthenticationStatus() == AuthenticationStatus.LoggedOut}
+  <div
+    role="alert"
+    class="alert fixed top-[10px] right-[50%] translate-x-[50%] rounded-full"
+  >
+    <DoorOpen />
+    <span>Log In to join and create conversations </span>
   </div>
 {/if}
 
