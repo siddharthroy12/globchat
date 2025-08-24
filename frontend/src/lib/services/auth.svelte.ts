@@ -39,9 +39,8 @@ export async function updateUserImageAndUsername(
   }
 
   const res = await fetch("/api/v1/user", {
-    // Fixed URL - should be /user not /google/login
     method: "POST",
-    body: formData, // Don't set Content-Type header, let browser set it with boundary
+    body: formData,
     headers: getAuthHeaders(),
   });
 
@@ -74,6 +73,7 @@ export async function checkAuthenticationStatus() {
 }
 
 export function logout() {
+  userData = null;
   removeToken();
   authenticationStatus = AuthenticationStatus.LoggedOut;
 }

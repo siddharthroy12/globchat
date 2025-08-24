@@ -17,7 +17,7 @@ func (app *application) generateAccountObject(user models.User) map[string]any {
 		"id":          user.ID,
 		"email":       user.Email,
 		"username":    user.Username,
-		"new_account": user.CreatedAt.Unix()-time.Now().Unix() < 10,
+		"new_account": time.Now().Unix()-user.CreatedAt.Unix() < 10,
 		"created_at":  user.CreatedAt.UTC(),
 		"image":       user.Image,
 		"messages":    user.Messages,

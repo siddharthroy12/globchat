@@ -66,7 +66,10 @@ func (m *UserModel) GetByUsername(username string) (User, error) {
 }
 
 func (m *UserModel) GetFromSessionToken(token string) (User, error) {
-	stmt := `SELECT users.id, users.email, users.created_at, users.username, users.image, users.messages FROM sessions INNER JOIN users ON users.id = sessions.user_id WHERE sessions.token = $1`
+	stmt := `SELECT users.id, users.email, users.created_at, users.username, users.image, users.messages 
+	         FROM sessions 
+	         INNER JOIN users ON users.id = sessions.user_id 
+	         WHERE sessions.token = $1 AND sessions.expires_at > NOW()`
 	row := m.DB.QueryRow(stmt, token)
 	return m.getUserFromRow(row)
 }
