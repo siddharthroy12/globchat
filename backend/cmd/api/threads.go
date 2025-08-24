@@ -10,6 +10,8 @@ import (
 	"globechat.live/internal/models"
 )
 
+const MinDistanceBetweenThreads = 0.05 // in km
+
 func (app *application) createThreadHandler(w http.ResponseWriter, r *http.Request) {
 	user := app.getUserFromRequst(r)
 
@@ -27,6 +29,18 @@ func (app *application) createThreadHandler(w http.ResponseWriter, r *http.Reque
 
 	if len(input.Message) == 0 {
 		app.badRequestResponse(w, r, fmt.Errorf("message is empty"))
+		return
+	}
+
+	threads, err := app.threadModel.GetByLocationRadius(input.Lat, input.Long, MinDistanceBetweenThreads)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "fetching nearby threads which creating one")
+		return
+	}
+
+	if len(threads) > 0 {
+		app.badRequestResponse(w, r, fmt.Errorf("too close to other threads"))
 		return
 	}
 

@@ -63,6 +63,10 @@ export async function createThread(
 
   const json = await res.json();
 
+  if (json["error"]) {
+    throw Error(json["error"]);
+  }
+
   return json["thread"];
 }
 

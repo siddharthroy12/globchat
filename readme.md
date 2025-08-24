@@ -9,3 +9,5 @@ A place where converations happens on the world map
 - Report System
 - Rate Limit
 - Admin Page
+- Format links in messages
+- Images in messages?

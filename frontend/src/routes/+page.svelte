@@ -16,6 +16,7 @@
     getAuthenticationStatus,
     getUserData,
   } from "$lib/services/auth.svelte";
+  import ThreadTooCloseModal from "$lib/components/modals/thread-too-close-modal.svelte";
 
   let map: null | maplibregl.Map = null;
   let mountedComponents: Map<
@@ -387,6 +388,7 @@
 {/if}
 
 <Controls {zoomToRandomChat} {zoomToMyLocation} {zoomIn} {zoomOut}></Controls>
+<ThreadTooCloseModal />
 
 <style>
   :global(.chat-marker) {

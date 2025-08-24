@@ -224,8 +224,17 @@
   }
 
   async function onCreateThread() {
-    const thread = await createThread(lat, long, inputValue);
-    onCreate(thread);
+    try {
+      const thread = await createThread(lat, long, inputValue);
+      onCreate(thread);
+    } catch (e) {
+      onClose();
+      // @ts-ignore
+      if (e?.message?.includes("too close")) {
+        // @ts-ignore
+        thread_too_close_modal.showModal();
+      }
+    }
   }
 
   async function onSend() {
