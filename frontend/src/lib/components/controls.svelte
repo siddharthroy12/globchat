@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { Dices, DoorOpen, LocateFixed, Minus, Plus } from "@lucide/svelte";
+  import {
+    Dices,
+    DoorOpen,
+    Info,
+    LocateFixed,
+    Minus,
+    Plus,
+  } from "@lucide/svelte";
   import LoginModal from "./modals/login-modal.svelte";
   import {
     AuthenticationStatus,
@@ -9,6 +16,7 @@
   import Avatar from "./avatar.svelte";
   import AccountInfoCard from "./account-info-card.svelte";
   import EditProfileModal from "./modals/edit-profile-modal.svelte";
+  import AboutModal from "./modals/about-modal.svelte";
   type ControlsProps = {
     zoomToRandomChat: () => void;
     zoomToMyLocation: () => void;
@@ -22,14 +30,28 @@
     // @ts-ignore
     document.getElementById("login-modal")?.showModal();
   }
+
+  function openAboutModal() {
+    // @ts-ignore
+    about_modal.showModal();
+    document.querySelector("#about_modal .modal-box").scrollTop = 0;
+  }
 </script>
 
 {#if getAuthenticationStatus() == AuthenticationStatus.LoggedIn}
   <EditProfileModal />
 {/if}
+<AboutModal />
 <LoginModal />
 <div class="toolbar">
   <div class="toolbar__container shadow-md">
+    <button
+      class="btn btn-primary btn-circle"
+      title="App info"
+      onclick={openAboutModal}
+    >
+      <Info />
+    </button>
     {#if getAuthenticationStatus() == AuthenticationStatus.Unknown}
       <button
         class="btn btn-primary btn-circle"
