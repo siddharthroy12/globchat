@@ -138,10 +138,23 @@
     addChatComponent = null;
   }
 
+  // Function to update map cursor based on zoom level
+  function updateMapCursor() {
+    if (!map) return;
+
+    const canvas = map.getCanvas();
+    if (zoomedInEnough) {
+      canvas.style.cursor = "crosshair"; // Or 'pointer' if you prefer
+    } else {
+      canvas.style.cursor = ""; // Reset to default (grab/move)
+    }
+  }
+
   async function handleMapUpdate() {
     if (!map) return;
 
     mapZoomLevel = map.getZoom();
+    updateMapCursor(); // Update cursor based on zoom level
 
     if (zoomedInEnough) {
       await loadVisibleThreads();
