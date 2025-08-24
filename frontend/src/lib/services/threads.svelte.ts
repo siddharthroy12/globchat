@@ -27,7 +27,17 @@ export async function fetchThreads(
 }
 
 export async function fetchRandomThread(): Promise<Thread> {
-  const res = await fetch(`/api/v1/threads/random`, {
+  const res = await fetch(`/api/v1/randomthread`, {
+    headers: getAuthHeaders(),
+  });
+
+  const json = await res.json();
+
+  return json["thread"];
+}
+
+export async function fetchThread(id: number): Promise<Thread> {
+  const res = await fetch(`/api/v1/threads/${id}`, {
     headers: getAuthHeaders(),
   });
 

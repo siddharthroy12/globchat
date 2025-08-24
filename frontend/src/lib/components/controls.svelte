@@ -34,6 +34,7 @@
   function openAboutModal() {
     // @ts-ignore
     about_modal.showModal();
+    // @ts-ignore
     document.querySelector("#about_modal .modal-box").scrollTop = 0;
   }
 </script>

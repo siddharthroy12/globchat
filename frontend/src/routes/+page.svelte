@@ -7,6 +7,7 @@
   import type { Thread } from "$lib/services/threads.svelte";
   import {
     fetchRandomThread,
+    fetchThread,
     fetchThreads,
   } from "$lib/services/threads.svelte";
   import { DoorOpen, ZoomIn } from "@lucide/svelte";
@@ -58,7 +59,17 @@
 
     // Initial load
     handleMapUpdate();
+    loadTheadFromQueryParameter();
   });
+
+  async function loadTheadFromQueryParameter() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const threadId = urlParams.get("threadId");
+    if (threadId) {
+      const thread = await fetchThread(+threadId);
+      zoomTo(thread.long, thread.lat);
+    }
+  }
 
   function handleMapClick(e: maplibregl.MapMouseEvent) {
     if (!map) return;

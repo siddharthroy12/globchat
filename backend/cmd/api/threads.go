@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/julienschmidt/httprouter"
 	"globechat.live/internal/models"
 )
 
@@ -76,6 +77,29 @@ func (app *application) getThreadsHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	app.writeJSON(w, 200, envelope{"threads": threads}, nil)
+}
+
+func (app *application) getThreadByIDHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	id := params.ByName("id")
+
+	threadId, err := strconv.Atoi(id)
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("threadId must be a valid number"))
+		return
+	}
+
+	thread, err := app.threadModel.GetById(threadId)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFoundResponse(w, r, fmt.Errorf("thread not found"))
+			return
+		}
+		app.serverErrorResponse(w, r, err, "fetching thread")
+		return
+	}
+
+	app.writeJSON(w, 200, envelope{"thread": thread}, nil)
 }
 
 func (app *application) getRandomThread(w http.ResponseWriter, r *http.Request) {

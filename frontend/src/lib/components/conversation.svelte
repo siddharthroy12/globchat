@@ -54,6 +54,7 @@
   let closeConnection = $state(() => {});
   let isSendButtonDisabled = $derived(inputValue.trim() == "");
   let closedForever = false;
+  let showCopiedMessage = $state(false);
 
   // References for scroll management
   // svelte-ignore non_reactive_update
@@ -262,7 +263,10 @@
       const threadUrl = `${window.location.origin}?threadId=${threadId}`;
       try {
         await navigator.clipboard.writeText(threadUrl);
-        // Could add a toast notification here
+        showCopiedMessage = true;
+        setTimeout(() => {
+          showCopiedMessage = false;
+        }, 2000);
       } catch (err) {
         // Fallback for older browsers
         const textArea = document.createElement("textarea");
@@ -271,6 +275,10 @@
         textArea.select();
         document.execCommand("copy");
         document.body.removeChild(textArea);
+        showCopiedMessage = true;
+        setTimeout(() => {
+          showCopiedMessage = false;
+        }, 2000);
       }
     }
   }
@@ -344,8 +352,15 @@
                     <a><Trash size={14} />Delete Thread</a>
                   </li>
                 {/if}
-                <li onclick={copyThreadLink}>
-                  <a><Copy size={14} />Copy Link</a>
+                <li onclick={copyThreadLink} class="relative">
+                  <a>
+                    <Copy size={14} />
+                    {#if showCopiedMessage}
+                      <span class="copied-message">Copied!</span>
+                    {:else}
+                      Copy Link
+                    {/if}
+                  </a>
                 </li>
               </ul>
             </div>
@@ -457,5 +472,10 @@
     border-radius: var(--radius-field);
     border-top-left-radius: 0px;
     border-top-right-radius: 0px;
+  }
+
+  .copied-message {
+    color: var(--color-success);
+    font-weight: 500;
   }
 </style>
