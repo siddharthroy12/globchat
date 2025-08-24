@@ -68,8 +68,8 @@ func (m *ThreadModel) Delete(threadId int) error {
 	return nil
 }
 
-func (m *ThreadModel) DeleteExpired() ([]int, error) {
-	stmt := "DELETE FROM threads WHERE expires_at < $1 RETURNING id"
+func (m *ThreadModel) GetExpiredIds() ([]int, error) {
+	stmt := "SELECT FROM threads WHERE expires_at < $1 RETURNING id"
 
 	rows, err := m.DB.Query(stmt, time.Now())
 	if err != nil {

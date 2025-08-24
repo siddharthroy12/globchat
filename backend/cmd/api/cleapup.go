@@ -16,12 +16,16 @@ func (app *application) startCleanupRoutine() {
 }
 
 func (app *application) cleanupExpiredThreads() error {
-	ids, err := app.threadModel.DeleteExpired()
+	ids, err := app.threadModel.GetExpiredIds()
 	if err != nil {
 		return err
 	}
 
 	for _, id := range ids {
+		err = app.deleteThread(id)
+		if err != nil {
+			return err
+		}
 		app.roomManager.notifyRoom(id, WebsocketConnectionMessage{
 			Type:   "delete-thread",
 			RoomID: id,

@@ -10,6 +10,7 @@ export type Thread = {
   username: string;
   user_image: string;
   created_at: string;
+  expires_at: string;
 };
 
 export async function fetchThreads(

@@ -20,8 +20,33 @@
     showAnimation,
     id,
     user_id,
+    expires_at,
     onDelete,
   }: Thread & { showAnimation: boolean; onDelete: () => void } = $props();
+
+  // Calculate days left until expiration
+  function getDaysLeft(): number {
+    if (!expires_at) return 0;
+
+    const now = new Date();
+    const expirationDate = new Date(expires_at);
+    const timeDiff = expirationDate.getTime() - now.getTime();
+    const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+    return Math.max(0, daysLeft); // Don't show negative days
+  }
+
+  function getDaysLeftText(): string {
+    const days = getDaysLeft();
+    if (days === 0) return "Expires today";
+    if (days === 1) return "1 day left";
+    return `${days} days left`;
+  }
+
+  function isExpired(): boolean {
+    if (!expires_at) return false;
+    return new Date() > new Date(expires_at);
+  }
 
   onMount(() => {
     if (showAnimation) {
@@ -55,6 +80,7 @@
     mount(Conversation, {
       props: {
         lat,
+        expires_at: expires_at,
         long,
         onDelete: () => {
           document.body.removeChild(el);
@@ -88,6 +114,7 @@
     class="conversation-bubble"
     class:active={conversationOpen}
     class:animate-expand={showContentAnimation}
+    class:expired={isExpired()}
     onclick={showConversation}
   >
     <div class="avatar-wrapper">
@@ -103,6 +130,15 @@
         <p class="time">
           {replies}
           {#if replies > 1}replies{:else}reply{/if}
+        </p>
+      {/if}
+      {#if expires_at}
+        <p class="expiration" class:expired-text={isExpired()}>
+          {#if isExpired()}
+            Expired
+          {:else}
+            {getDaysLeftText()}
+          {/if}
         </p>
       {/if}
     </div>
@@ -140,6 +176,10 @@
   .active {
     box-shadow: 0 0 0 2px var(--color-primary);
   }
+  .expired {
+    opacity: 0.6;
+    filter: grayscale(50%);
+  }
   .avatar-wrapper {
     flex-shrink: 0;
   }
@@ -170,5 +210,14 @@
     font-weight: 400;
     color: var(--color-base-content);
     opacity: 0.8;
+  }
+  .expiration {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-warning);
+    margin-top: 2px;
+  }
+  .expired-text {
+    color: var(--color-error);
   }
 </style>

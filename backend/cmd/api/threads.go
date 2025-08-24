@@ -153,12 +153,7 @@ func (app *application) deleteThreadHandler(w http.ResponseWriter, r *http.Reque
 		app.badRequestResponse(w, r, fmt.Errorf("you do not own this thread naughty boy"))
 		return
 	}
-	err = app.messageModel.DeleteByThreadID(threadId)
-	if err != nil {
-		app.serverErrorResponse(w, r, err, "delete messages using thread id")
-		return
-	}
-	err = app.threadModel.Delete(threadId)
+	err = app.deleteThread(threadId)
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "delete thread")
 		return
@@ -170,4 +165,16 @@ func (app *application) deleteThreadHandler(w http.ResponseWriter, r *http.Reque
 		Data:   thread,
 	})
 	app.writeJSON(w, 200, envelope{"message": "thread deleted"}, nil)
+}
+
+func (app *application) deleteThread(threadId int) error {
+	err := app.messageModel.DeleteByThreadID(threadId)
+	if err != nil {
+		return err
+	}
+	err = app.threadModel.Delete(threadId)
+	if err != nil {
+		return err
+	}
+	return nil
 }
