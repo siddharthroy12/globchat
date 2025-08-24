@@ -70,7 +70,9 @@
         create: false,
         onClose: () => {
           conversationOpen = false;
-          document.body.removeChild(el);
+          try {
+            document.body.removeChild(el);
+          } catch {}
         },
       },
       target: el,

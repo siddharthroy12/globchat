@@ -123,7 +123,8 @@ func (app *application) websocketConnectionHandler(w http.ResponseWriter, r *htt
 			return
 		}
 		if err != nil {
-			app.logError(r, err, "websocket message handling")
+			// it errors out most of the time during closing
+			// app.logError(r, err, "websocket message handling")
 			return
 		}
 	}

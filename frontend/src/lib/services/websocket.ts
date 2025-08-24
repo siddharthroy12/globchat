@@ -1,10 +1,15 @@
 import type { Message } from "./message.svelte";
+import type { Thread } from "./threads.svelte";
 
-export function joinThread(
-  threadId: number,
-  onNewMessage: (message: Message) => void,
-  onDisconnect: () => void
-) {
+type JoinThreadInputs = {
+  threadId: number;
+  onNewMessage: (message: Message) => void;
+  onDeleteMessage: (message: Message) => void;
+  onDeleteThread: (thread: Thread) => void;
+  onDisconnect: () => void;
+};
+
+export function joinThread(inputs: JoinThreadInputs) {
   let origin = window.origin;
   origin = origin.replace("https://", "wss://");
   origin = origin.replace("http://", "ws://");
@@ -16,7 +21,7 @@ export function joinThread(
     // Join room
     socket.send(
       JSON.stringify({
-        room_id: threadId,
+        room_id: inputs.threadId,
         type: "join",
       })
     );
@@ -25,12 +30,23 @@ export function joinThread(
   // Listen for messages
   socket.addEventListener("message", (event) => {
     const json = JSON.parse(event.data);
-    if (json["type"] == "new-message") {
-      onNewMessage(json["message"]);
+    switch (json["type"]) {
+      case "new-message":
+        if (json["data"].thread_id === inputs.threadId)
+          inputs.onNewMessage(json["data"]);
+        break;
+      case "delete-message":
+        if (json["data"].thread_id === inputs.threadId)
+          inputs.onDeleteMessage(json["data"]);
+        break;
+      case "delete-thread":
+        if (json["data"].id === inputs.threadId)
+          inputs.onDeleteThread(json["data"]);
+        break;
     }
   });
 
-  socket.onclose = onDisconnect;
+  socket.onclose = inputs.onDisconnect;
 
   return () => {
     socket.close();

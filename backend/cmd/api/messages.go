@@ -67,7 +67,18 @@ func (app *application) deleteMessageHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app.messageModel.Delete(messageId)
+	err = app.messageModel.Delete(messageId)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "delete message")
+		return
+	}
+
+	app.roomManager.notifyRoom(message.ThreadId, WebsocketConnectionMessage{
+		Type:   "delete-message",
+		RoomID: message.ThreadId,
+		Data:   message,
+	})
 
 	app.writeJSON(w, 200, envelope{"message": "message deleted"}, nil)
 }

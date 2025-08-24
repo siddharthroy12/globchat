@@ -171,16 +171,23 @@
 
   function openConnection() {
     if (threadId) {
-      closeConnection = joinThread(
+      closeConnection = joinThread({
         threadId,
-        async (newMessage: Message) => {
+        onNewMessage: async (newMessage) => {
           // Load newer messages to catch up on anything missed during disconnection
           if (messages.length > 0) {
             const newestMessage = messages[messages.length - 1];
             loadNewerMessages(newestMessage.id);
           }
         },
-        () => {
+        onDeleteMessage: async (message) => {
+          handleMessageDelete(message.id);
+        },
+        onDeleteThread: async (thread) => {
+          closeConnection();
+          onDelete();
+        },
+        onDisconnect: () => {
           if (!closedForever) {
             // If connection got disconnected for some reason connect again
             openConnection();
@@ -190,8 +197,8 @@
               loadNewerMessages(newestMessage.id);
             }
           }
-        }
-      );
+        },
+      });
     }
   }
 
@@ -252,7 +259,7 @@
   // Copy thread link to clipboard
   async function copyThreadLink() {
     if (threadId) {
-      const threadUrl = `${window.location.origin}/thread/${threadId}`;
+      const threadUrl = `${window.location.origin}?threadId=${threadId}`;
       try {
         await navigator.clipboard.writeText(threadUrl);
         // Could add a toast notification here
@@ -299,6 +306,7 @@
     </div>
   </div>
 </dialog>
+
 <div
   class="w-[100vw] height-[100dvh] fixed top-0 left-0 right-0 bottom-0 overflow-hidden z-[99]"
   onclick={close}

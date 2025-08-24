@@ -125,5 +125,11 @@ func (app *application) deleteThreadHandler(w http.ResponseWriter, r *http.Reque
 		app.serverErrorResponse(w, r, err, "delete thread")
 		return
 	}
+
+	app.roomManager.notifyRoom(threadId, WebsocketConnectionMessage{
+		Type:   "delete-thread",
+		RoomID: threadId,
+		Data:   thread,
+	})
 	app.writeJSON(w, 200, envelope{"message": "thread deleted"}, nil)
 }
