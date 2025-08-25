@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -20,6 +22,21 @@ func generateRandomID(length int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+// Helper function to read integer query parameters
+func (app *application) readInt(qs url.Values, key string, defaultValue int) (int, error) {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue, nil
+	}
+
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return defaultValue, err
+	}
+
+	return i, nil
 }
 
 func (app *application) readJSON(r io.Reader, dst any) error {

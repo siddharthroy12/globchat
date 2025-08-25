@@ -3,16 +3,29 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 )
 
 type User struct {
-	ID        int
-	Email     string
-	CreatedAt time.Time
-	Username  string
-	Image     string
-	Messages  int
+	ID        int       `json:"id"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+	Username  string    `json:"username"`
+	Image     string    `json:"image"`
+	Messages  int       `json:"messages"`
+}
+
+type UserQuery struct {
+	Search    string
+	PageSize  int
+	PageIndex int
+}
+
+type UserQueryResult struct {
+	Total int    `json:"total"`
+	Count int    `json:"count"`
+	Users []User `json:"users"`
 }
 
 type UserModel struct {
@@ -86,6 +99,70 @@ func (m *UserModel) UpdateImageAndUsername(userId int, image string, username st
 	return nil
 }
 
+func (m *UserModel) Query(query UserQuery) (UserQueryResult, error) {
+	// Build the base query
+	baseStmt := `SELECT id, email, created_at, username, image, messages FROM users`
+	countStmt := `SELECT COUNT(*) FROM users`
+
+	var whereClause string
+	var args []interface{}
+
+	// Add search condition if provided
+	if query.Search != "" {
+		whereClause = ` WHERE username ILIKE $1 OR email ILIKE $1`
+		args = append(args, "%"+query.Search+"%")
+	}
+
+	// Get total count
+	var total int
+	countQuery := countStmt + whereClause
+	err := m.DB.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
+		return UserQueryResult{}, err
+	}
+
+	// Build the main query with pagination
+	mainQuery := baseStmt + whereClause + ` ORDER BY created_at DESC`
+
+	// Add pagination
+	if query.PageSize > 0 {
+		offset := query.PageIndex * query.PageSize
+		mainQuery += ` LIMIT $` + fmt.Sprintf("%d", len(args)+1) + ` OFFSET $` + fmt.Sprintf("%d", len(args)+2)
+		args = append(args, query.PageSize, offset)
+	}
+
+	// Execute the query
+	rows, err := m.DB.Query(mainQuery, args...)
+	if err != nil {
+		return UserQueryResult{}, err
+	}
+	defer rows.Close()
+
+	// Scan results
+	var users []User
+	for rows.Next() {
+		var u User
+		err := rows.Scan(&u.ID, &u.Email, &u.CreatedAt, &u.Username, &u.Image, &u.Messages)
+		if err != nil {
+			return UserQueryResult{}, err
+		}
+		users = append(users, u)
+	}
+
+	if err = rows.Err(); err != nil {
+		return UserQueryResult{}, err
+	}
+
+	// Note: The UserQueryResult struct references []Message but should probably be []User
+	// You may need to update the struct definition or create a conversion
+	result := UserQueryResult{
+		Total: total,
+		Count: len(users),
+		Users: users, // This won't compile due to type mismatch
+	}
+
+	return result, nil
+}
 func (m *UserModel) UpdateImage(userId int, image string) error {
 	stmt := "UPDATE users SET image = $1 WHERE id = $2"
 	_, err := m.DB.Exec(stmt, image, userId)

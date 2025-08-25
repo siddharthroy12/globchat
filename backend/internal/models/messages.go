@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -16,6 +17,18 @@ type Message struct {
 	Username  string    `json:"username"`
 	UserImage string    `json:"user_image"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type MessageQuery struct {
+	Search    string
+	PageSize  int
+	PageIndex int
+}
+
+type MessageQueryResult struct {
+	Total    int       `json:"total"`
+	Count    int       `json:"count"`
+	Messages []Message `json:"messages"`
 }
 
 type MessageModel struct {
@@ -123,6 +136,77 @@ func (m *MessageModel) GetByID(messageId int) (Message, error) {
 	}
 
 	return message, nil
+}
+
+func (m *MessageModel) Query(query MessageQuery) (MessageQueryResult, error) {
+	var result MessageQueryResult
+
+	// Base query with JOIN to get user information
+	baseQuery := `SELECT messages.id, text, messages.image, thread_id, reported, is_first, 
+	              user_id, messages.created_at, users.username, users.image 
+	              FROM messages 
+	              INNER JOIN users ON users.id = messages.user_id`
+
+	// Count query for total results
+	countQuery := `SELECT COUNT(*) FROM messages 
+	               INNER JOIN users ON users.id = messages.user_id`
+
+	var whereClause string
+	var args []interface{}
+	argIndex := 1
+
+	// Add search condition if provided
+	if query.Search != "" {
+		whereClause = " WHERE LOWER(text) LIKE LOWER($" + fmt.Sprintf("%d", argIndex) + ")"
+		args = append(args, "%"+query.Search+"%")
+		argIndex++
+	}
+
+	// Get total count first
+	countStmt := countQuery + whereClause
+	err := m.DB.QueryRow(countStmt, args...).Scan(&result.Total)
+	if err != nil {
+		return MessageQueryResult{}, err
+	}
+
+	// Calculate offset for pagination
+	offset := query.PageIndex * query.PageSize
+
+	// Build final query with pagination
+	finalQuery := baseQuery + whereClause + " ORDER BY messages.created_at DESC LIMIT $" +
+		fmt.Sprintf("%d", argIndex) + " OFFSET $" + fmt.Sprintf("%d", argIndex+1)
+
+	args = append(args, query.PageSize, offset)
+
+	// Execute the query
+	rows, err := m.DB.Query(finalQuery, args...)
+	if err != nil {
+		return MessageQueryResult{}, err
+	}
+	defer rows.Close()
+
+	var messages []Message
+
+	// Scan results
+	for rows.Next() {
+		var message Message
+		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId,
+			&message.Reported, &message.IsFirst, &message.UserId,
+			&message.CreatedAt, &message.Username, &message.UserImage)
+		if err != nil {
+			return MessageQueryResult{}, err
+		}
+		messages = append(messages, message)
+	}
+
+	if err = rows.Err(); err != nil {
+		return MessageQueryResult{}, err
+	}
+
+	result.Messages = messages
+	result.Count = len(messages)
+
+	return result, nil
 }
 
 func (m *MessageModel) GetByThreadID(threadId int, limit int) ([]Message, error) {

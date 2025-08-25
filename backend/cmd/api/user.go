@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"globechat.live/internal/models"
 )
 
 func (app *application) updateUserInfoHandler(w http.ResponseWriter, r *http.Request) {
@@ -65,4 +67,78 @@ func (app *application) updateUserInfoHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	app.writeJSON(w, 200, envelope{"message": "Updated successfully", "image_url": imageURL}, nil)
+}
+
+func (app *application) queryUsersHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse query parameters
+	queryParams := r.URL.Query()
+
+	// Get search parameter
+	search := strings.TrimSpace(queryParams.Get("search"))
+
+	// Get page size with default and validation
+	pageSize, err := app.readInt(queryParams, "page_size", 20) // default 20
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("invalid page_size parameter: %v", err))
+		return
+	}
+	if pageSize < 1 || pageSize > 100 {
+		app.badRequestResponse(w, r, fmt.Errorf("page_size must be between 1 and 100"))
+		return
+	}
+
+	// Get page index with default and validation
+	pageIndex, err := app.readInt(queryParams, "page", 0) // default 0 (first page)
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("invalid page parameter: %v", err))
+		return
+	}
+	if pageIndex < 0 {
+		app.badRequestResponse(w, r, fmt.Errorf("page must be 0 or greater"))
+		return
+	}
+
+	// Create query struct
+	query := models.UserQuery{
+		Search:    search,
+		PageSize:  pageSize,
+		PageIndex: pageIndex,
+	}
+
+	// Execute query
+	result, err := app.userModel.Query(query)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "query users")
+		return
+	}
+
+	// Calculate pagination metadata
+	totalPages := 0
+	if pageSize > 0 {
+		totalPages = (result.Total + pageSize - 1) / pageSize // ceiling division
+	}
+
+	hasNext := pageIndex < totalPages-1
+	hasPrev := pageIndex > 0
+
+	// Prepare response
+	response := envelope{
+		"users": result.Users, // Note: assuming UserQueryResult was fixed to have Users field
+		"pagination": envelope{
+			"total":       result.Total,
+			"count":       result.Count,
+			"page":        pageIndex,
+			"page_size":   pageSize,
+			"total_pages": totalPages,
+			"has_next":    hasNext,
+			"has_prev":    hasPrev,
+		},
+	}
+
+	// Add search info if search was performed
+	if search != "" {
+		response["search"] = search
+	}
+
+	app.writeJSON(w, http.StatusOK, response, nil)
 }

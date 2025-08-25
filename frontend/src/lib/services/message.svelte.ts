@@ -13,6 +13,12 @@ export type Message = {
   is_first: boolean;
 };
 
+export type MessageQueryResult = {
+  total: number;
+  count: number;
+  messages: Message[];
+};
+
 export async function createMessage(threadId: number, text: string) {
   const res = await fetch(`/api/v1/messages`, {
     method: "POST",
@@ -42,6 +48,7 @@ export async function reportMessage(messageId: number) {
     headers: getAuthHeaders(),
   });
 }
+
 export async function getMessages(
   threadId: number,
   limit: number,
@@ -58,4 +65,32 @@ export async function getMessages(
   const json = await res.json();
 
   return json["messages"];
+}
+
+export async function queryMessages(
+  search?: string,
+  pageSize: number = 20,
+  page: number = 0
+): Promise<MessageQueryResult> {
+  const params = new URLSearchParams();
+
+  if (search) {
+    params.append("search", search);
+  }
+
+  params.append("page_size", pageSize.toString());
+  params.append("page", page.toString());
+
+  const res = await fetch(`/api/v1/messages/query?${params.toString()}`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP error! status: ${res.status}`);
+  }
+
+  const json = await res.json();
+
+  return json["result"];
 }
