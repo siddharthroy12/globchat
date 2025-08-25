@@ -18,9 +18,6 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/api/v1/user", app.requireAuthentication(app.updateUserInfoHandler))
 	router.HandlerFunc(http.MethodGet, "/api/v1/logout", app.requireAuthentication(app.logoutHandler))
 
-	// Users
-	router.HandlerFunc(http.MethodGet, "/api/v1/users/query", app.requireAdminAccess(app.queryUsersHandler))
-
 	// Threads
 	router.HandlerFunc(http.MethodGet, "/api/v1/threads", app.getThreadsHandler)
 	router.HandlerFunc(http.MethodGet, "/api/v1/threads/:id", app.getThreadByIDHandler)
@@ -33,13 +30,16 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodDelete, "/api/v1/messages", app.requireAuthentication(app.deleteMessageHandler))
 	router.HandlerFunc(http.MethodGet, "/api/v1/messages", app.getMessagesHandler)
 	router.HandlerFunc(http.MethodGet, "/api/v1/messages/:id", app.getMessageByIdHandler)
-	router.HandlerFunc(http.MethodGet, "/api/v1/messages/query", app.requireAdminAccess(app.queryMessagesHandler))
 
 	// Reports
 	router.HandlerFunc(http.MethodPost, "/api/v1/reports", app.requireAuthentication(app.createReportHandler))
-	router.HandlerFunc(http.MethodGet, "/api/v1/reports/query", app.requireAdminAccess(app.queryReportsHandler))
 	router.HandlerFunc(http.MethodPatch, "/api/v1/reports/resolve", app.requireAdminAccess(app.resolveReportHandler))
 	router.HandlerFunc(http.MethodDelete, "/api/v1/reports", app.requireAdminAccess(app.deleteReportHandler))
+
+	// Queries
+	router.HandlerFunc(http.MethodGet, "/api/v1/query/reports", app.requireAdminAccess(app.queryReportsHandler))
+	router.HandlerFunc(http.MethodGet, "/api/v1/query/messages", app.requireAdminAccess(app.queryMessagesHandler))
+	router.HandlerFunc(http.MethodGet, "/api/v1/query/users", app.requireAdminAccess(app.queryUsersHandler))
 
 	// Websocket
 	router.HandlerFunc(http.MethodGet, "/api/v1/ws", app.websocketConnectionHandler)

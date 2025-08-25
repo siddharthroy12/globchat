@@ -5,7 +5,6 @@ export type Message = {
   text: string;
   image: string;
   thread_id: number;
-  reported: number;
   user_id: number;
   username: string;
   user_image: string;
@@ -60,6 +59,16 @@ export async function getMessages(
   return json["messages"];
 }
 
+export async function getMessageById(messageId: number): Promise<Message> {
+  const res = await fetch(`/api/v1/messages/${messageId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const json = await res.json();
+
+  return json["message"];
+}
+
 export async function queryMessages(
   search?: string,
   pageSize: number = 20,
@@ -74,7 +83,7 @@ export async function queryMessages(
   params.append("page_size", pageSize.toString());
   params.append("page", page.toString());
 
-  const res = await fetch(`/api/v1/messages/query?${params.toString()}`, {
+  const res = await fetch(`/api/v1/query/messages?${params.toString()}`, {
     method: "GET",
     headers: getAuthHeaders(),
   });

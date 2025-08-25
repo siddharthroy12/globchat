@@ -128,7 +128,6 @@
             <td>Text</td>
             <td>Image</td>
             <td>Thread ID</td>
-            <td>Reported</td>
             <td>Is First</td>
             <td>User</td>
             <th class="bg-base-300">Created At</th>
@@ -163,15 +162,7 @@
                   {message.thread_id}
                 </a>
               </td>
-              <td>
-                <div
-                  class="badge badge-error {message.reported > 0
-                    ? ''
-                    : 'badge-outline'}"
-                >
-                  {message.reported}
-                </div>
-              </td>
+
               <td>
                 <div
                   class="badge {message.is_first

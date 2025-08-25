@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import MessagePreviewModal from "$lib/components/modals/message-preview-modal.svelte";
   import {
     queryReports,
     deleteReport,
@@ -13,6 +14,13 @@
   let queryResult: ReportQueryResult = { total: 0, count: 0, reports: [] };
   let loading = false;
   let searchTimeout: number;
+  let selectedMessageId = 0;
+
+  function openMessageModal(messageId: number) {
+    selectedMessageId = messageId;
+    // @ts-ignore
+    message_preview_modal?.showModal();
+  }
 
   // Calculate total pages
   $: totalPages = Math.ceil(queryResult.total / pageSize);
@@ -171,13 +179,12 @@
                 <span class="font-mono text-sm">{report.reporter_id}</span>
               </td>
               <td>
-                <a
-                  href="/messages?messageId={report.message_id}"
+                <button
                   class="link link-primary"
-                  target="_blank"
+                  on:click={() => openMessageModal(report.message_id)}
                 >
                   {report.message_id}
-                </a>
+                </button>
               </td>
               <td class="text-sm">{formatDate(report.created_at)}</td>
               <th>
@@ -281,3 +288,5 @@
     </div>
   </div>
 </div>
+
+<MessagePreviewModal id={selectedMessageId} />

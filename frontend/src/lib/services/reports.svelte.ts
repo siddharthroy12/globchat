@@ -60,7 +60,7 @@ export async function queryReports(
   params.append("page_size", pageSize.toString());
   params.append("page", page.toString());
 
-  const res = await fetch(`/api/v1/reports/query?${params.toString()}`, {
+  const res = await fetch(`/api/v1/query/reports?${params.toString()}`, {
     method: "GET",
     headers: getAuthHeaders(),
   });

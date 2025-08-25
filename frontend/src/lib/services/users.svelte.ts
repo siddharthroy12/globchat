@@ -44,7 +44,7 @@ export async function queryUsers( // Changed function name from 'queryMessages'
   params.append("page_size", pageSize.toString()); // Changed from 'pageSize' to 'page_size'
   params.append("page", page.toString()); // Changed from 'pageIndex' to 'page'
 
-  const res = await fetch(`/api/v1/users/query?${params.toString()}`, {
+  const res = await fetch(`/api/v1/query/users?${params.toString()}`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
