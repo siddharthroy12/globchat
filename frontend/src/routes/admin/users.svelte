@@ -144,6 +144,7 @@
         <thead class="bg-base-300">
           <tr class="bg-base-300">
             <th class="bg-base-300">ID</th>
+            <th class="bg-base-300">Is Admin</th>
             <td>Avatar</td>
             <td>Username</td>
             <td>Email</td>
@@ -155,6 +156,7 @@
           {#each queryResult.users as user (user.id)}
             <tr class="hover:bg-base-200">
               <th class="">{user.id}</th>
+              <th class="">{user.is_admin.toString()}</th>
               <td>
                 <Avatar src={user.image} size={40} />
               </td>

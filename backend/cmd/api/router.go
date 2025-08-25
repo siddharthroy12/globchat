@@ -15,7 +15,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/api/v1/user", app.requireAuthentication(app.getUserDataHandler))
 	router.HandlerFunc(http.MethodPost, "/api/v1/user", app.requireAuthentication(app.updateUserInfoHandler))
 	router.HandlerFunc(http.MethodGet, "/api/v1/logout", app.requireAuthentication(app.logoutHandler))
-	router.HandlerFunc(http.MethodGet, "/api/v1/users/query", app.queryUsersHandler)
+	router.HandlerFunc(http.MethodGet, "/api/v1/users/query", app.requireAdminAccess(app.queryUsersHandler))
 	router.HandlerFunc(http.MethodGet, "/api/v1/threads", app.getThreadsHandler)
 	router.HandlerFunc(http.MethodGet, "/api/v1/threads/:id", app.getThreadByIDHandler)
 	router.HandlerFunc(http.MethodGet, "/api/v1/randomthread", app.getRandomThread)
@@ -24,7 +24,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/api/v1/messages", app.requireAuthentication(app.createMessageHandler))
 	router.HandlerFunc(http.MethodDelete, "/api/v1/messages", app.requireAuthentication(app.deleteMessageHandler))
 	router.HandlerFunc(http.MethodGet, "/api/v1/messages", app.getMessagesHandler)
-	router.HandlerFunc(http.MethodGet, "/api/v1/messages/query", app.queryMessagesHandler)
+	router.HandlerFunc(http.MethodGet, "/api/v1/messages/query", app.requireAdminAccess(app.queryMessagesHandler))
 	router.HandlerFunc(http.MethodPost, "/api/v1/messages/report", app.requireAuthentication(app.reportMessageHandler))
 
 	// Websocket

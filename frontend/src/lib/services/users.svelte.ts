@@ -7,6 +7,7 @@ export type User = {
   username: string;
   image: string;
   messages: number;
+  is_admin: boolean;
 };
 
 export type UserQueryResult = {

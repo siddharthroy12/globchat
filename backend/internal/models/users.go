@@ -11,6 +11,7 @@ type User struct {
 	ID        int       `json:"id"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
+	IsAdmin   bool      `json:"is_admin"`
 	Username  string    `json:"username"`
 	Image     string    `json:"image"`
 	Messages  int       `json:"messages"`
@@ -33,7 +34,7 @@ type UserModel struct {
 }
 
 func (m *UserModel) Create(email string, username string) (User, error) {
-	stmt := "INSERT INTO users (email, username) VALUES($1, $2) RETURNING id, email, created_at, username, image, messages"
+	stmt := "INSERT INTO users (email, username) VALUES($1, $2) RETURNING id, email, created_at, username, image, messages, is_admin"
 
 	row := m.DB.QueryRow(stmt, email, username)
 
@@ -48,7 +49,7 @@ func (m *UserModel) Create(email string, username string) (User, error) {
 func (m *UserModel) getUserFromRow(row *sql.Row) (User, error) {
 	var u User
 
-	err := row.Scan(&u.ID, &u.Email, &u.CreatedAt, &u.Username, &u.Image, &u.Messages)
+	err := row.Scan(&u.ID, &u.Email, &u.CreatedAt, &u.Username, &u.Image, &u.Messages, &u.IsAdmin)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -61,25 +62,25 @@ func (m *UserModel) getUserFromRow(row *sql.Row) (User, error) {
 }
 
 func (m *UserModel) GetById(userId int) (User, error) {
-	stmt := "SELECT id, email, created_at, username, image, messages FROM users WHERE id = $1"
+	stmt := "SELECT id, email, created_at, username, image, messages, is_admin FROM users WHERE id = $1"
 	row := m.DB.QueryRow(stmt, userId)
 	return m.getUserFromRow(row)
 }
 
 func (m *UserModel) GetByEmail(email string) (User, error) {
-	stmt := "SELECT id, email, created_at, username, image, messages FROM users WHERE email = $1"
+	stmt := "SELECT id, email, created_at, username, image, messages, is_admin FROM users WHERE email = $1"
 	row := m.DB.QueryRow(stmt, email)
 	return m.getUserFromRow(row)
 }
 
 func (m *UserModel) GetByUsername(username string) (User, error) {
-	stmt := "SELECT id, email, created_at, username, image, messages FROM users WHERE username = $1"
+	stmt := "SELECT id, email, created_at, username, image, messages, is_admin FROM users WHERE username = $1"
 	row := m.DB.QueryRow(stmt, username)
 	return m.getUserFromRow(row)
 }
 
 func (m *UserModel) GetFromSessionToken(token string) (User, error) {
-	stmt := `SELECT users.id, users.email, users.created_at, users.username, users.image, users.messages 
+	stmt := `SELECT users.id, users.email, users.created_at, users.username, users.image, users.messages , is_admin
 	         FROM sessions 
 	         INNER JOIN users ON users.id = sessions.user_id 
 	         WHERE sessions.token = $1 AND sessions.expires_at > NOW()`
@@ -101,7 +102,7 @@ func (m *UserModel) UpdateImageAndUsername(userId int, image string, username st
 
 func (m *UserModel) Query(query UserQuery) (UserQueryResult, error) {
 	// Build the base query
-	baseStmt := `SELECT id, email, created_at, username, image, messages FROM users`
+	baseStmt := `SELECT id, email, created_at, username, image, messages, is_admin FROM users`
 	countStmt := `SELECT COUNT(*) FROM users`
 
 	var whereClause string
@@ -142,7 +143,7 @@ func (m *UserModel) Query(query UserQuery) (UserQueryResult, error) {
 	var users []User
 	for rows.Next() {
 		var u User
-		err := rows.Scan(&u.ID, &u.Email, &u.CreatedAt, &u.Username, &u.Image, &u.Messages)
+		err := rows.Scan(&u.ID, &u.Email, &u.CreatedAt, &u.Username, &u.Image, &u.Messages, &u.IsAdmin)
 		if err != nil {
 			return UserQueryResult{}, err
 		}
@@ -153,12 +154,10 @@ func (m *UserModel) Query(query UserQuery) (UserQueryResult, error) {
 		return UserQueryResult{}, err
 	}
 
-	// Note: The UserQueryResult struct references []Message but should probably be []User
-	// You may need to update the struct definition or create a conversion
 	result := UserQueryResult{
 		Total: total,
 		Count: len(users),
-		Users: users, // This won't compile due to type mismatch
+		Users: users,
 	}
 
 	return result, nil

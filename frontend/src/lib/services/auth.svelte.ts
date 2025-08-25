@@ -5,6 +5,7 @@ export type UserData = {
   messages: number;
   username: string;
   new_account: string;
+  is_admin: boolean;
 };
 
 export enum AuthenticationStatus {

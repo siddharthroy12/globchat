@@ -21,6 +21,7 @@ func (app *application) generateAccountObject(user models.User) map[string]any {
 		"created_at":  user.CreatedAt.UTC(),
 		"image":       user.Image,
 		"messages":    user.Messages,
+		"is_admin":    user.IsAdmin,
 	}
 }
 
@@ -153,6 +154,18 @@ func (app *application) requireAuthentication(next http.HandlerFunc) http.Handle
 			return
 		} else {
 			app.badRequestResponse(w, r, fmt.Errorf("you are trying to enter wrong terrority my guy"))
+		}
+	})
+}
+
+func (app *application) requireAdminAccess(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, ok := r.Context().Value(UserContextKey).(*models.User)
+		if ok && user.IsAdmin {
+			next(w, r)
+			return
+		} else {
+			app.badRequestResponse(w, r, fmt.Errorf("you are not privileged to use this route. go away"))
 		}
 	})
 }
