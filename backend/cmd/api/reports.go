@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"globechat.live/internal/models"
 )
 
 func (app *application) createReportHandler(w http.ResponseWriter, r *http.Request) {
@@ -106,5 +108,51 @@ func (app *application) resolveReportHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (app *application) queryReportsHandler(w http.ResponseWriter, r *http.Request) {
+	// Get search parameter (optional)
+	search := r.URL.Query().Get("search")
 
+	// Get pageSize parameter with default value
+	pageSizeStr := r.URL.Query().Get("page_size")
+	pageSize := 20 // default page size
+	if pageSizeStr != "" {
+		var err error
+		pageSize, err = strconv.Atoi(pageSizeStr)
+		if err != nil || pageSize <= 0 {
+			app.badRequestResponse(w, r, fmt.Errorf("page_size must be a valid positive number"))
+			return
+		}
+		// Set a reasonable maximum page size to prevent abuse
+		if pageSize > 100 {
+			pageSize = 100
+		}
+	}
+
+	// Get pageIndex parameter with default value
+	pageIndexStr := r.URL.Query().Get("page")
+	pageIndex := 0 // default page index (first page)
+	if pageIndexStr != "" {
+		var err error
+		pageIndex, err = strconv.Atoi(pageIndexStr)
+		if err != nil || pageIndex < 0 {
+			app.badRequestResponse(w, r, fmt.Errorf("page must be a valid non-negative number"))
+			return
+		}
+	}
+
+	// Create the query struct
+	query := models.ReportQuery{
+		Search:    search,
+		PageSize:  pageSize,
+		PageIndex: pageIndex,
+	}
+
+	// Execute the query
+	result, err := app.reportModel.Query(query)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "query reports")
+		return
+	}
+
+	// Return the results
+	app.writeJSON(w, 200, envelope{"result": result}, nil)
 }

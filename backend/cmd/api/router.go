@@ -37,7 +37,8 @@ func (app *application) routes() http.Handler {
 
 	// Reports
 	router.HandlerFunc(http.MethodPost, "/api/v1/reports", app.requireAuthentication(app.createReportHandler))
-	router.HandlerFunc(http.MethodPatch, "/api/v1/reports/resolve", app.requireAuthentication(app.resolveReportHandler))
+	router.HandlerFunc(http.MethodGet, "/api/v1/reports/query", app.requireAdminAccess(app.queryReportsHandler))
+	router.HandlerFunc(http.MethodPatch, "/api/v1/reports/resolve", app.requireAdminAccess(app.resolveReportHandler))
 	router.HandlerFunc(http.MethodDelete, "/api/v1/reports", app.requireAdminAccess(app.deleteReportHandler))
 
 	// Websocket

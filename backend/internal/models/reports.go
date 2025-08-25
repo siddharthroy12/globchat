@@ -1,6 +1,10 @@
 package models
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+	"strings"
+)
 
 type Report struct {
 	ID         int    `json:"id"`
@@ -9,6 +13,7 @@ type Report struct {
 	MessageId  int    `json:"message_id"`
 	CreatedAt  string `json:"created_at"`
 }
+
 type ReportQuery struct {
 	Search    string
 	PageSize  int
@@ -51,7 +56,7 @@ func (m *ReportModel) Exists(userId int, messageId int) (bool, error) {
 }
 
 func (m *ReportModel) GetByID(reportId int) (Report, error) {
-	stmt := "SELECT id, reason, reporter_id, message_id, created_at WHERE id = $1"
+	stmt := "SELECT id, reason, reporter_id, message_id, created_at FROM reports WHERE id = $1"
 
 	report := Report{}
 	err := m.DB.QueryRow(stmt, reportId).Scan(&report.ID, &report.Reason, &report.ReporterId, &report.MessageId, &report.CreatedAt)
@@ -94,7 +99,71 @@ func (m *ReportModel) RemoveByReporterId(
 }
 
 func (m *ReportModel) Query(query ReportQuery) (ReportQueryResult, error) {
-	return ReportQueryResult{}, nil
+	var result ReportQueryResult
+	var args []interface{}
+	var conditions []string
+	argIndex := 1
+
+	// Build the WHERE clause for search
+	baseQuery := "FROM reports"
+	if query.Search != "" {
+		conditions = append(conditions, fmt.Sprintf("reason ILIKE $%d", argIndex))
+		args = append(args, "%"+query.Search+"%")
+		argIndex++
+	}
+
+	whereClause := ""
+	if len(conditions) > 0 {
+		whereClause = " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	// Get total count
+	countQuery := "SELECT COUNT(*) " + baseQuery + whereClause
+	err := m.DB.QueryRow(countQuery, args...).Scan(&result.Total)
+	if err != nil {
+		return ReportQueryResult{}, err
+	}
+
+	// Build the main query with pagination
+	selectQuery := "SELECT id, reason, reporter_id, message_id, created_at " + baseQuery + whereClause + " ORDER BY created_at DESC"
+
+	// Add pagination
+	if query.PageSize > 0 {
+		selectQuery += fmt.Sprintf(" LIMIT $%d", argIndex)
+		args = append(args, query.PageSize)
+		argIndex++
+
+		if query.PageIndex > 0 {
+			selectQuery += fmt.Sprintf(" OFFSET $%d", argIndex)
+			args = append(args, query.PageIndex*query.PageSize)
+		}
+	}
+
+	// Execute the main query
+	rows, err := m.DB.Query(selectQuery, args...)
+	if err != nil {
+		return ReportQueryResult{}, err
+	}
+	defer rows.Close()
+
+	var reports []Report
+	for rows.Next() {
+		var report Report
+		err := rows.Scan(&report.ID, &report.Reason, &report.ReporterId, &report.MessageId, &report.CreatedAt)
+		if err != nil {
+			return ReportQueryResult{}, err
+		}
+		reports = append(reports, report)
+	}
+
+	if err = rows.Err(); err != nil {
+		return ReportQueryResult{}, err
+	}
+
+	result.Reports = reports
+	result.Count = len(reports)
+
+	return result, nil
 }
 
 func (m *ReportModel) RemoveByMessageId(

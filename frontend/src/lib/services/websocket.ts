@@ -1,11 +1,10 @@
 import type { Message } from "./message.svelte";
-import type { Thread } from "./threads.svelte";
 
 type JoinThreadInputs = {
   threadId: number;
   onNewMessage: (message: Message) => void;
   onDeleteMessage: (message: Message) => void;
-  onDeleteThread: (thread: Thread) => void;
+  onDeleteThread: () => void;
   onDisconnect: () => void;
 };
 
@@ -40,8 +39,7 @@ export function joinThread(inputs: JoinThreadInputs) {
           inputs.onDeleteMessage(json["data"]);
         break;
       case "delete-thread":
-        if (json["data"].id === inputs.threadId)
-          inputs.onDeleteThread(json["data"]);
+        if (json["data"].id === inputs.threadId) inputs.onDeleteThread();
         break;
     }
   });

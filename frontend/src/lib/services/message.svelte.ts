@@ -42,13 +42,6 @@ export async function deleteMessage(messageId: number) {
   });
 }
 
-export async function reportMessage(messageId: number) {
-  const res = await fetch(`/api/v1/messages/report?messageId=${messageId}`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-  });
-}
-
 export async function getMessages(
   threadId: number,
   limit: number,

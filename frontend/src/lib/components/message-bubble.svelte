@@ -16,7 +16,7 @@
   };
   const { message, onDelete }: MessageProps = $props();
   let dropdownOpened = $state(false);
-  let dropdownButton: HTMLElement;
+  let dropdownButton: HTMLElement | null = $state(null);
   const isFromUser = $derived(getUserData()?.id == message.user_id);
 
   const formatTime = (dateString: string) => {
@@ -31,8 +31,8 @@
   function openDropdown(e: Event) {
     dropdownOpened = true;
     const el = document.createElement("div");
-    let x = dropdownButton.getBoundingClientRect().x;
-    let y = dropdownButton.getBoundingClientRect().y;
+    let x = dropdownButton!.getBoundingClientRect().x;
+    let y = dropdownButton!.getBoundingClientRect().y;
     mount(MessageOptionDropdown, {
       props: {
         message,

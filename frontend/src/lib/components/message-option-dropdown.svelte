@@ -1,10 +1,7 @@
 <script lang="ts">
   import { getUserData } from "$lib/services/auth.svelte";
-  import {
-    deleteMessage,
-    reportMessage,
-    type Message,
-  } from "$lib/services/message.svelte";
+  import { deleteMessage, type Message } from "$lib/services/message.svelte";
+  import { createReport } from "$lib/services/reports.svelte";
   import { CircleAlert, Trash } from "@lucide/svelte";
 
   type MessageOptionDropdownProps = {
@@ -26,12 +23,18 @@
 
   let deleteModal: HTMLDialogElement;
   let reportModal: HTMLDialogElement;
+  let reason: string = $state("");
+  let reportStatus: "idle" | "submitting" | "already_exists" | "success" =
+    $state("idle");
 
   function showDeleteConfirmation() {
     deleteModal.showModal();
   }
 
   function showReportConfirmation() {
+    // Reset state when opening modal
+    reason = "";
+    reportStatus = "idle";
     reportModal.showModal();
   }
 
@@ -42,10 +45,30 @@
     onClose();
   }
 
-  function onConfirmReport() {
-    reportMessage(message.id);
-    reportModal.close();
-    onClose();
+  async function onConfirmReport() {
+    if (!reason.trim()) {
+      return; // Don't submit if reason is empty
+    }
+
+    reportStatus = "submitting";
+
+    try {
+      const res = await createReport(message.id, reason.trim());
+      if (res.includes("already exists")) {
+        reportStatus = "already_exists";
+      } else {
+        reportStatus = "success";
+        // Auto close after success
+        setTimeout(() => {
+          reportModal.close();
+          onClose();
+        }, 1500);
+      }
+    } catch (error) {
+      console.log(error);
+      reportStatus = "idle"; // Reset on error
+      console.error("Failed to create report:", error);
+    }
   }
 
   function onCancelDelete() {
@@ -53,7 +76,7 @@
   }
 
   function onCancelReport() {
-    reportModal.close();
+    onClose();
   }
 </script>
 
@@ -104,21 +127,76 @@
   </form>
 </dialog>
 
-<!-- Report Confirmation Modal -->
+<!-- Report Modal with Reason Input -->
 <dialog bind:this={reportModal} class="modal">
   <div class="modal-box">
     <h3 class="font-bold text-lg text-warning">Report Message</h3>
-    <p class="py-4">
-      Are you sure you want to report this message? This will notify moderators
-      for review.
-    </p>
-    <div class="modal-action">
-      <button class="btn" onclick={onCancelReport}>Cancel</button>
-      <button class="btn btn-warning" onclick={onConfirmReport}>
+
+    {#if reportStatus === "idle" || reportStatus === "submitting"}
+      <p class="py-2 mb-2">
+        Please provide a reason for reporting this message. This will help
+        moderators review the content appropriately.
+      </p>
+
+      <div class="form-control w-full flex flex-col">
+        <label class="label" for="report-reason mb-2">
+          <span class="label-text">Reason for report</span>
+        </label>
+        <textarea
+          id="report-reason"
+          bind:value={reason}
+          class="textarea textarea-bordered h-24 resize-none w-full mt-2"
+          placeholder="e.g., Spam, inappropriate content, harassment..."
+          disabled={reportStatus === "submitting"}
+        ></textarea>
+      </div>
+
+      <div class="modal-action">
+        <button
+          class="btn"
+          onclick={onCancelReport}
+          disabled={reportStatus === "submitting"}
+        >
+          Cancel
+        </button>
+        <button
+          class="btn btn-warning"
+          onclick={onConfirmReport}
+          disabled={reportStatus === "submitting" || !reason.trim()}
+        >
+          {#if reportStatus === "submitting"}
+            <span class="loading loading-spinner loading-sm"></span>
+            Submitting...
+          {:else}
+            <CircleAlert size={16} />
+            Report
+          {/if}
+        </button>
+      </div>
+    {:else if reportStatus === "already_exists"}
+      <div class="alert alert-info mt-6">
         <CircleAlert size={16} />
-        Report
-      </button>
-    </div>
+        <span
+          >This message has already been reported. Moderators are aware and will
+          review it.</span
+        >
+      </div>
+
+      <div class="modal-action">
+        <button class="btn" onclick={onCancelReport}> Close </button>
+      </div>
+    {:else if reportStatus === "success"}
+      <div class="alert alert-success mt-6">
+        <CircleAlert size={16} />
+        <span
+          >Report submitted successfully. Moderators will review this message.</span
+        >
+      </div>
+
+      <div class="modal-action">
+        <button class="btn" onclick={onCancelReport}> Close </button>
+      </div>
+    {/if}
   </div>
   <form method="dialog" class="modal-backdrop">
     <button onclick={onCancelReport}>close</button>

@@ -238,7 +238,7 @@
         onDeleteMessage: async (message) => {
           handleMessageDelete(message.id);
         },
-        onDeleteThread: async (thread) => {
+        onDeleteThread: async () => {
           closeConnection();
           onDelete();
         },
