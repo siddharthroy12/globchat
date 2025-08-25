@@ -48,7 +48,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/media/*filepath", app.mediaHandler)
 
 	// Error handlers
-	router.NotFound = http.HandlerFunc(app.notFoundHandler)
+	router.NotFound = gzipMiddleware(http.HandlerFunc(app.spaHandler))
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedHandler)
 
 	return app.recoverPanic(app.authenticate(router))

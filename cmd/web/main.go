@@ -62,17 +62,22 @@ func main() {
 	flag.StringVar(&cfg.env, "env", "development", "the environment the api server is running on")
 	flag.StringVar(&cfg.dsn, "dsn", "", "dsn string to connect to postgres DB")
 	flag.StringVar(&cfg.googleClientId, "gclientid", "", "google client id for oauth")
-	flag.StringVar(&cfg.mediaDir, "mediadir", "", "directory to store uploaded media files")
+	flag.StringVar(&cfg.mediaDir, "mediadir", "./media", "directory to store uploaded media files")
 	flag.Parse()
+
+	if strings.TrimSpace(cfg.dsn) == "" {
+		fmt.Println("no dsn provided")
+		os.Exit(1)
+	}
+
+	if strings.TrimSpace(cfg.googleClientId) == "" {
+		fmt.Println("no gclientid provided")
+		os.Exit(1)
+	}
 
 	// Ensure the profile pictures directory exists
 	if err := os.MkdirAll(cfg.mediaDir, 0755); err != nil {
 		fmt.Printf("failed to create media directory: %s", err.Error())
-		os.Exit(1)
-	}
-
-	if strings.TrimSpace(cfg.dsn) == "" {
-		fmt.Println("no dsn provided")
 		os.Exit(1)
 	}
 

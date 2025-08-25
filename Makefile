@@ -1,8 +1,12 @@
 include .envrc
 
+.PHONY: build
+build: build_frontend
+	go build -o bin/web ./cmd/web
+
 .PHONY: run
 run:
-	go run ./cmd/api -dsn ${GLOBECHAT_DB_DSN} -gclientid ${GOOGLE_CLIENT_ID} -mediadir ./media
+	go run ./cmd/web -dsn ${GLOBECHAT_DB_DSN} -gclientid ${GOOGLE_CLIENT_ID} -mediadir ./media
 
 .PHONY: psql
 psql:
@@ -39,3 +43,12 @@ force_migration:
 .PHONY: migration_version
 migration_version:
 	migrate -path ./migrations -database ${GLOBECHAT_DB_DSN} version
+
+.PHONY: build_frontend
+build_frontend:
+	cd ui && npm run build
+	mkdir -p ./frontend/static
+	rm -rf ./frontend/static/*
+	cp -r ./ui/build/* ./frontend/static/
+
+

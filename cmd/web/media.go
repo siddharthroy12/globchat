@@ -150,7 +150,7 @@ func (app *application) mediaHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set cache headers for better performance
-	w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year
+	w.Header().Set("Cache-Control", "public, max-age=86400") // 1 day
 	w.Header().Set("ETag", fmt.Sprintf(`"%x-%x"`, fileInfo.ModTime().Unix(), fileInfo.Size()))
 
 	// Serve the file
