@@ -35,11 +35,11 @@ export function joinThread(inputs: JoinThreadInputs) {
           inputs.onNewMessage(json["data"]);
         break;
       case "delete-message":
-        if (json["data"].thread_id === inputs.threadId)
+        if (json["room_id"] === inputs.threadId)
           inputs.onDeleteMessage(json["data"]);
         break;
       case "delete-thread":
-        if (json["data"].id === inputs.threadId) inputs.onDeleteThread();
+        if (json["room_id"] === inputs.threadId) inputs.onDeleteThread();
         break;
     }
   });

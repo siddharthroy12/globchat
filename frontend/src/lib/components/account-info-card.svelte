@@ -37,12 +37,16 @@
         <Pencil size={15} />
       </button>
     </div>
-    <div class="flex flex-col gap-0">
+    <div class="flex flex-col gap-1">
       <p class="text-xl">
         {getUserData()?.username}
-        <span class="text-secondary">#{getUserData()?.id}</span>
       </p>
-      <p>Chats: <span class="text-primary">0</span></p>
+      <div class="text-xl flex items-center gap-2">
+        <div class=" text-secondary">
+          #{getUserData()?.id}
+        </div>
+        <div class="badge badge-soft badge-accent">Admin</div>
+      </div>
     </div>
   </div>
   <button class="btn btn-soft rounded-full btn-error" onclick={onClickLogout}
