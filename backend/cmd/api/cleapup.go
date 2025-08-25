@@ -26,11 +26,6 @@ func (app *application) cleanupExpiredThreads() error {
 		if err != nil {
 			return err
 		}
-		app.roomManager.notifyRoom(id, WebsocketConnectionMessage{
-			Type:   "delete-thread",
-			RoomID: id,
-			Data:   "",
-		})
 	}
 
 	return err

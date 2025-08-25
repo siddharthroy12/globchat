@@ -149,7 +149,7 @@ func (app *application) deleteThreadHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if thread.UserId != user.ID {
+	if thread.UserId != user.ID && !user.IsAdmin {
 		app.badRequestResponse(w, r, fmt.Errorf("you do not own this thread naughty boy"))
 		return
 	}
@@ -168,13 +168,16 @@ func (app *application) deleteThreadHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) deleteThread(threadId int) error {
-	err := app.messageModel.DeleteByThreadID(threadId)
+	err := app.threadModel.Delete(threadId)
 	if err != nil {
 		return err
 	}
-	err = app.threadModel.Delete(threadId)
-	if err != nil {
-		return err
-	}
+
+	app.roomManager.notifyRoom(threadId, WebsocketConnectionMessage{
+		Type:   "delete-thread",
+		RoomID: threadId,
+		Data:   "",
+	})
+
 	return nil
 }

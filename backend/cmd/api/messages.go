@@ -57,28 +57,17 @@ func (app *application) deleteMessageHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if message.UserId != user.ID {
+	if message.UserId != user.ID && !user.IsAdmin {
 		app.badRequestResponse(w, r, fmt.Errorf("you do not own this message naughty boy"))
 		return
 	}
 
-	if message.IsFirst {
-		app.badRequestResponse(w, r, fmt.Errorf("you are trying to do something funny i know it"))
-		return
-	}
-
-	err = app.messageModel.Delete(messageId)
+	err = app.deleteMessage(message)
 
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "delete message")
 		return
 	}
-
-	app.roomManager.notifyRoom(message.ThreadId, WebsocketConnectionMessage{
-		Type:   "delete-message",
-		RoomID: message.ThreadId,
-		Data:   message,
-	})
 
 	app.writeJSON(w, 200, envelope{"message": "message deleted"}, nil)
 }
@@ -194,4 +183,25 @@ func (app *application) queryMessagesHandler(w http.ResponseWriter, r *http.Requ
 
 	// Return the results
 	app.writeJSON(w, 200, envelope{"result": result}, nil)
+}
+
+func (app *application) deleteMessage(message models.Message) error {
+
+	if message.IsFirst {
+		err := app.deleteThread(message.ThreadId)
+		return err
+	}
+
+	err := app.messageModel.Delete(message.ID)
+
+	if err != nil {
+		return err
+	}
+
+	app.roomManager.notifyRoom(message.ThreadId, WebsocketConnectionMessage{
+		Type:   "delete-message",
+		RoomID: message.ThreadId,
+		Data:   message,
+	})
+	return nil
 }

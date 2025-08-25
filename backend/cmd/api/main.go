@@ -31,6 +31,7 @@ type application struct {
 	sessionModel models.SessionModel
 	threadModel  models.ThreadModel
 	messageModel models.MessageModel
+	reportModel  models.ReportModel
 	roomManager  WebSocketRoomManager
 }
 
@@ -100,6 +101,9 @@ func main() {
 			DB: db,
 		},
 		messageModel: models.MessageModel{
+			DB: db,
+		},
+		reportModel: models.ReportModel{
 			DB: db,
 		},
 		roomManager: *NewWebSocketRoomManager(),

@@ -125,6 +125,16 @@ func (m *MessageModel) IncreaseReported(messageId int) error {
 	return nil
 }
 
+func (m *MessageModel) Exists(id int) (bool, error) {
+	var exists bool
+
+	stmt := "SELECT EXISTS(SELECT true FROM messages WHERE id = $1)"
+
+	err := m.DB.QueryRow(stmt, id).Scan(&exists)
+
+	return exists, err
+}
+
 func (m *MessageModel) GetByID(messageId int) (Message, error) {
 	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE messages.id = $1"
 

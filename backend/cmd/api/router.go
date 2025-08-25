@@ -9,23 +9,36 @@ import (
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
-	// API routes
+	// Health check
 	router.HandlerFunc(http.MethodGet, "/api/v1/healthcheck", app.healthcheckHandler)
+
+	// Auth
 	router.HandlerFunc(http.MethodPost, "/api/v1/google/login", app.loginWihGoogleHandler)
 	router.HandlerFunc(http.MethodGet, "/api/v1/user", app.requireAuthentication(app.getUserDataHandler))
 	router.HandlerFunc(http.MethodPost, "/api/v1/user", app.requireAuthentication(app.updateUserInfoHandler))
 	router.HandlerFunc(http.MethodGet, "/api/v1/logout", app.requireAuthentication(app.logoutHandler))
+
+	// Users
 	router.HandlerFunc(http.MethodGet, "/api/v1/users/query", app.requireAdminAccess(app.queryUsersHandler))
+
+	// Threads
 	router.HandlerFunc(http.MethodGet, "/api/v1/threads", app.getThreadsHandler)
 	router.HandlerFunc(http.MethodGet, "/api/v1/threads/:id", app.getThreadByIDHandler)
 	router.HandlerFunc(http.MethodGet, "/api/v1/randomthread", app.getRandomThread)
 	router.HandlerFunc(http.MethodPost, "/api/v1/threads", app.requireAuthentication(app.createThreadHandler))
 	router.HandlerFunc(http.MethodDelete, "/api/v1/threads", app.requireAuthentication(app.deleteThreadHandler))
+
+	// Messages
 	router.HandlerFunc(http.MethodPost, "/api/v1/messages", app.requireAuthentication(app.createMessageHandler))
 	router.HandlerFunc(http.MethodDelete, "/api/v1/messages", app.requireAuthentication(app.deleteMessageHandler))
 	router.HandlerFunc(http.MethodGet, "/api/v1/messages", app.getMessagesHandler)
 	router.HandlerFunc(http.MethodGet, "/api/v1/messages/query", app.requireAdminAccess(app.queryMessagesHandler))
 	router.HandlerFunc(http.MethodPost, "/api/v1/messages/report", app.requireAuthentication(app.reportMessageHandler))
+
+	// Reports
+	router.HandlerFunc(http.MethodPost, "/api/v1/reports", app.requireAuthentication(app.createReportHandler))
+	router.HandlerFunc(http.MethodPatch, "/api/v1/reports/resolve", app.requireAuthentication(app.resolveReportHandler))
+	router.HandlerFunc(http.MethodDelete, "/api/v1/reports", app.requireAdminAccess(app.deleteReportHandler))
 
 	// Websocket
 	router.HandlerFunc(http.MethodGet, "/api/v1/ws", app.websocketConnectionHandler)
