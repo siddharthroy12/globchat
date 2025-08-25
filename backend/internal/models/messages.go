@@ -11,7 +11,6 @@ type Message struct {
 	Text      string    `json:"text"`
 	Image     string    `json:"image"`
 	ThreadId  int       `json:"thread_id"`
-	Reported  int       `json:"reported"`
 	IsFirst   bool      `json:"is_first"`
 	UserId    int       `json:"user_id"`
 	Username  string    `json:"username"`
@@ -36,10 +35,10 @@ type MessageModel struct {
 }
 
 func (m *MessageModel) Create(text string, image string, threadId int, userId int, isFirst bool) (Message, error) {
-	stmt := "INSERT INTO messages (text, image, thread_id, user_id, is_first) VALUES($1, $2, $3, $4, $5) RETURNING id, text, image, thread_id, reported, is_first, user_id, created_at"
+	stmt := "INSERT INTO messages (text, image, thread_id, user_id, is_first) VALUES($1, $2, $3, $4, $5) RETURNING id, text, image, thread_id, is_first, user_id, created_at"
 
 	var message Message
-	err := m.DB.QueryRow(stmt, text, image, threadId, userId, isFirst).Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt)
+	err := m.DB.QueryRow(stmt, text, image, threadId, userId, isFirst).Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.IsFirst, &message.UserId, &message.CreatedAt)
 
 	if err != nil {
 		return Message{}, err
@@ -103,28 +102,6 @@ func (m *MessageModel) DeleteByThreadID(threadId int) error {
 	return nil
 }
 
-func (m *MessageModel) IncreaseReported(messageId int) error {
-	stmt := "UPDATE messages SET reported = reported + 1 WHERE id = $1"
-
-	result, err := m.DB.Exec(stmt, messageId)
-	if err != nil {
-		return err
-	}
-
-	// Check if any rows were affected
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	// If no rows were affected, the message didn't exist
-	if rowsAffected == 0 {
-		return sql.ErrNoRows
-	}
-
-	return nil
-}
-
 func (m *MessageModel) Exists(id int) (bool, error) {
 	var exists bool
 
@@ -136,10 +113,10 @@ func (m *MessageModel) Exists(id int) (bool, error) {
 }
 
 func (m *MessageModel) GetByID(messageId int) (Message, error) {
-	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE messages.id = $1"
+	stmt := "SELECT messages.id, text, messages.image, thread_id, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE messages.id = $1"
 
 	message := Message{}
-	err := m.DB.QueryRow(stmt, messageId).Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
+	err := m.DB.QueryRow(stmt, messageId).Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
 
 	if err != nil {
 		return Message{}, err
@@ -152,7 +129,7 @@ func (m *MessageModel) Query(query MessageQuery) (MessageQueryResult, error) {
 	var result MessageQueryResult
 
 	// Base query with JOIN to get user information
-	baseQuery := `SELECT messages.id, text, messages.image, thread_id, reported, is_first, 
+	baseQuery := `SELECT messages.id, text, messages.image, thread_id, is_first, 
 	              user_id, messages.created_at, users.username, users.image 
 	              FROM messages 
 	              INNER JOIN users ON users.id = messages.user_id`
@@ -201,7 +178,7 @@ func (m *MessageModel) Query(query MessageQuery) (MessageQueryResult, error) {
 	for rows.Next() {
 		var message Message
 		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId,
-			&message.Reported, &message.IsFirst, &message.UserId,
+			&message.IsFirst, &message.UserId,
 			&message.CreatedAt, &message.Username, &message.UserImage)
 		if err != nil {
 			return MessageQueryResult{}, err
@@ -220,7 +197,7 @@ func (m *MessageModel) Query(query MessageQuery) (MessageQueryResult, error) {
 }
 
 func (m *MessageModel) GetByThreadID(threadId int, limit int) ([]Message, error) {
-	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE thread_id = $1 ORDER BY created_at DESC LIMIT $2"
+	stmt := "SELECT messages.id, text, messages.image, thread_id, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE thread_id = $1 ORDER BY created_at DESC LIMIT $2"
 
 	rows, err := m.DB.Query(stmt, threadId, limit)
 	if err != nil {
@@ -232,7 +209,7 @@ func (m *MessageModel) GetByThreadID(threadId int, limit int) ([]Message, error)
 
 	for rows.Next() {
 		message := Message{}
-		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
+		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
 		if err != nil {
 			return nil, err
 		}
@@ -247,7 +224,7 @@ func (m *MessageModel) GetByThreadID(threadId int, limit int) ([]Message, error)
 }
 
 func (m *MessageModel) GetBeforeID(threadId int, id int, limit int) ([]Message, error) {
-	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE thread_id = $1 AND messages.id < $2 ORDER BY messages.id DESC LIMIT $3"
+	stmt := "SELECT messages.id, text, messages.image, thread_id, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE thread_id = $1 AND messages.id < $2 ORDER BY messages.id DESC LIMIT $3"
 
 	rows, err := m.DB.Query(stmt, threadId, id, limit)
 	if err != nil {
@@ -259,7 +236,7 @@ func (m *MessageModel) GetBeforeID(threadId int, id int, limit int) ([]Message, 
 
 	for rows.Next() {
 		message := Message{}
-		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
+		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
 
 		if err != nil {
 			return nil, err
@@ -275,7 +252,7 @@ func (m *MessageModel) GetBeforeID(threadId int, id int, limit int) ([]Message, 
 }
 
 func (m *MessageModel) GetAfterID(threadId int, id int, limit int) ([]Message, error) {
-	stmt := "SELECT messages.id, text, messages.image, thread_id, reported, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE thread_id = $1 AND messages.id > $2 ORDER BY messages.id ASC LIMIT $3"
+	stmt := "SELECT messages.id, text, messages.image, thread_id, is_first, user_id, messages.created_at, users.username, users.image FROM messages INNER JOIN users ON users.id = messages.user_id WHERE thread_id = $1 AND messages.id > $2 ORDER BY messages.id ASC LIMIT $3"
 
 	rows, err := m.DB.Query(stmt, threadId, id, limit)
 	if err != nil {
@@ -287,7 +264,7 @@ func (m *MessageModel) GetAfterID(threadId int, id int, limit int) ([]Message, e
 
 	for rows.Next() {
 		message := Message{}
-		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.Reported, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
+		err = rows.Scan(&message.ID, &message.Text, &message.Image, &message.ThreadId, &message.IsFirst, &message.UserId, &message.CreatedAt, &message.Username, &message.UserImage)
 
 		if err != nil {
 			return nil, err

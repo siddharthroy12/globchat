@@ -99,7 +99,7 @@ func (app *application) getThreadByIDHandler(w http.ResponseWriter, r *http.Requ
 
 	threadId, err := strconv.Atoi(id)
 	if err != nil {
-		app.badRequestResponse(w, r, fmt.Errorf("threadId must be a valid number"))
+		app.badRequestResponse(w, r, fmt.Errorf("id must be a valid number"))
 		return
 	}
 

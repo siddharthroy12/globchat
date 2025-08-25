@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/julienschmidt/httprouter"
 	"globechat.live/internal/models"
 )
 
@@ -116,25 +118,6 @@ func (app *application) getMessagesHandler(w http.ResponseWriter, r *http.Reques
 	app.writeJSON(w, 200, envelope{"messages": messages}, nil)
 }
 
-func (app *application) reportMessageHandler(w http.ResponseWriter, r *http.Request) {
-
-	messageId, err := strconv.Atoi(r.URL.Query().Get("messageId"))
-
-	if err != nil {
-		app.badRequestResponse(w, r, fmt.Errorf("messageId must be a valid number"))
-		return
-	}
-
-	err = app.messageModel.IncreaseReported(messageId)
-
-	if err != nil {
-		app.notFoundResponse(w, r, fmt.Errorf("message not found"))
-		return
-	}
-
-	app.writeJSON(w, 200, envelope{"message": "message deleted"}, nil)
-}
-
 func (app *application) queryMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	// Get search parameter (optional)
 	search := r.URL.Query().Get("search")
@@ -183,6 +166,29 @@ func (app *application) queryMessagesHandler(w http.ResponseWriter, r *http.Requ
 
 	// Return the results
 	app.writeJSON(w, 200, envelope{"result": result}, nil)
+}
+
+func (app *application) getMessageByIdHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	id := params.ByName("id")
+
+	messageId, err := strconv.Atoi(id)
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("id must be a valid number"))
+		return
+	}
+
+	message, err := app.messageModel.GetByID(messageId)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFoundResponse(w, r, fmt.Errorf("message not found"))
+			return
+		}
+		app.serverErrorResponse(w, r, err, "fetching message")
+		return
+	}
+
+	app.writeJSON(w, 200, envelope{"message": message}, nil)
 }
 
 func (app *application) deleteMessage(message models.Message) error {

@@ -32,8 +32,8 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/api/v1/messages", app.requireAuthentication(app.createMessageHandler))
 	router.HandlerFunc(http.MethodDelete, "/api/v1/messages", app.requireAuthentication(app.deleteMessageHandler))
 	router.HandlerFunc(http.MethodGet, "/api/v1/messages", app.getMessagesHandler)
+	router.HandlerFunc(http.MethodGet, "/api/v1/messages/:id", app.getMessageByIdHandler)
 	router.HandlerFunc(http.MethodGet, "/api/v1/messages/query", app.requireAdminAccess(app.queryMessagesHandler))
-	router.HandlerFunc(http.MethodPost, "/api/v1/messages/report", app.requireAuthentication(app.reportMessageHandler))
 
 	// Reports
 	router.HandlerFunc(http.MethodPost, "/api/v1/reports", app.requireAuthentication(app.createReportHandler))
