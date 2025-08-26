@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"errors"
+	"math"
 	"math/big"
 	"time"
 )
@@ -301,6 +302,50 @@ func (m *ThreadModel) GetByLocationRadius(centerLat, centerLong, radiusKm float6
 			 ORDER BY created_at DESC`
 
 	rows, err := m.DB.Query(stmt, centerLat, centerLong, radiusKm)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	threads := make([]*Thread, 0)
+
+	for rows.Next() {
+		thread := &Thread{}
+		err = rows.Scan(&thread.ID, &thread.Lat, &thread.Long, &thread.Message, &thread.UserId, &thread.CreatedAt, &thread.ExpiresAt, &thread.Username, &thread.UserImage)
+		if err != nil {
+			return nil, err
+		}
+		threads = append(threads, thread)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return threads, nil
+}
+
+func (m *ThreadModel) GetByLocationBounds(centerLat, centerLong, radiusKm float64) ([]*Thread, error) {
+	// Convert radius to approximate lat/lng bounds
+	// 1 degree latitude ≈ 111 km
+	// 1 degree longitude varies by latitude: ≈ 111 * cos(latitude) km
+	latDelta := radiusKm / 111.0
+	lngDelta := radiusKm / (111.0 * math.Cos(centerLat*math.Pi/180.0))
+
+	// Calculate bounding box
+	minLat := centerLat - latDelta
+	maxLat := centerLat + latDelta
+	minLng := centerLong - lngDelta
+	maxLng := centerLong + lngDelta
+
+	stmt := `SELECT threads.id, lat, long, message, user_id, threads.created_at, threads.expires_at,
+			 users.username, users.image
+			 FROM threads INNER JOIN users ON users.id = threads.user_id
+			 WHERE lat BETWEEN $1 AND $2 
+			   AND long BETWEEN $3 AND $4
+			 ORDER BY created_at DESC`
+
+	rows, err := m.DB.Query(stmt, minLat, maxLat, minLng, maxLng)
 	if err != nil {
 		return nil, err
 	}

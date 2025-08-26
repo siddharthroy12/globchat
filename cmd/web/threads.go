@@ -83,7 +83,7 @@ func (app *application) getThreadsHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	threads, err := app.threadModel.GetByLocationRadius(lat, long, km)
+	threads, err := app.threadModel.GetByLocationBounds(lat, long, km)
 
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "fetching threads")

@@ -27,6 +27,15 @@
 
 <svelte:head>
   <link rel="icon" href={favicon} />
+  <meta
+    name="description"
+    content="GlobeChat is a platform where you can start conversation anywhere on the world map and chat with people who are interested in the same location as you. Start topics anywhere and let other people find it and join the conversation."
+  />
+  <meta
+    name="keywords"
+    content="Map, Globe, World Map, Chats, Messages, Threads, Conversations"
+  />
+  <title>GlobeChat</title>
 </svelte:head>
 
 {@render children?.()}
