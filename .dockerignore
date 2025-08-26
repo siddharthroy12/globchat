@@ -1,0 +1,10 @@
+node_modules
+
+ui/.svelte-kit
+ui/build
+
+.envrc
+media
+
+frontend/static
+bin

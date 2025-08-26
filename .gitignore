@@ -1,5 +1,6 @@
 .envrc
 media
 
-web/static
+frontend/static
 bin
+.env.docker

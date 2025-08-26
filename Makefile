@@ -1,12 +1,16 @@
-include .envrc
+-include .envrc
 
 .PHONY: build
 build: build_frontend
 	go build -o bin/web ./cmd/web
 
-.PHONY: run
-run:
-	go run ./cmd/web -dsn ${GLOBECHAT_DB_DSN} -gclientid ${GOOGLE_CLIENT_ID} -mediadir ./media
+.PHONY: run_backend
+run_backend:
+	go run ./cmd/web -dsn ${GLOBECHAT_DB_DSN} -gclientid ${PUBLIC_GOOGLE_CLIENT_ID} -mediadir ./media
+
+.PHONY: run_frontend
+run_frontend:
+	cd ui && PUBLIC_GOOGLE_CLIENT_ID=${PUBLIC_GOOGLE_CLIENT_ID} npm run dev
 
 .PHONY: psql
 psql:
@@ -46,9 +50,7 @@ migration_version:
 
 .PHONY: build_frontend
 build_frontend:
-	cd ui && npm run build
+	cd ui && $(if $(PUBLIC_GOOGLE_CLIENT_ID),PUBLIC_GOOGLE_CLIENT_ID=$(PUBLIC_GOOGLE_CLIENT_ID)) npm run build
 	mkdir -p ./frontend/static
 	rm -rf ./frontend/static/*
 	cp -r ./ui/build/* ./frontend/static/
-
-

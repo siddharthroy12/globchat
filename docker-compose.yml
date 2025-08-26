@@ -1,0 +1,36 @@
+services:
+  migrate:
+    build: .
+    command: ["make", "migrate_up"]
+    depends_on:
+      - postgres
+    env_file:
+      - path: ./.env.docker
+        required: true # default
+    restart: "no"
+
+  app:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./media:/root/media
+    env_file:
+      - path: ./.env.docker
+        required: true # default
+    depends_on:
+      - migrate
+      - postgres
+
+  postgres:
+    image: postgres:15-alpine
+    env_file:
+      - path: ./.env.docker
+        required: true # default
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
