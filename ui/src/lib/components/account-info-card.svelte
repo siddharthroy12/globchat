@@ -45,7 +45,9 @@
         <div class=" text-secondary">
           #{getUserData()?.id}
         </div>
-        <div class="badge badge-soft badge-accent">Admin</div>
+        {#if getUserData()?.is_admin}
+          <div class="badge badge-soft badge-accent">Admin</div>
+        {/if}
       </div>
     </div>
   </div>
