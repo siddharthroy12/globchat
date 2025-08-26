@@ -1,6 +1,8 @@
 .envrc
-media
-
-frontend/static
-bin
+media/
+frontend/static/
+bin/
 .env.docker
+
+# Exception: don't ignore this specific file
+!frontend/static/empty
