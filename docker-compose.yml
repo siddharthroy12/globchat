@@ -14,7 +14,7 @@ services:
     ports:
       - "4000:4000"
     volumes:
-      - ./media:/root/media
+      - media:/app/media
     env_file:
       - path: ./.env.docker
         required: true # default
@@ -34,3 +34,4 @@ services:
 
 volumes:
   postgres_data:
+  media:
