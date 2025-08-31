@@ -3,10 +3,11 @@ services:
     build: .
     command: ["make", "migrate_up"]
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     env_file:
       - path: ./.env.docker
-        required: true # default
+        required: true
     restart: "no"
 
   app:
@@ -17,20 +18,30 @@ services:
       - media:/app/media
     env_file:
       - path: ./.env.docker
-        required: true # default
+        required: true
     depends_on:
-      - migrate
-      - postgres
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: postgres:15-alpine
     env_file:
       - path: ./.env.docker
-        required: true # default
+        required: true
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:
