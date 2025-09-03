@@ -98,7 +98,7 @@
         {username} <span class="time">{getTimeAgo(created_at)}</span>
       </p>
       <p class="last-chat"></p>
-      <p>{message}</p>
+      <p class="first-chat">{message}</p>
       {#if replies > 0}
         <p class="time">
           {replies}
@@ -163,8 +163,11 @@
     font-weight: bold;
     text-wrap: nowrap;
   }
+  .first-chat {
+    width: 150px;
+  }
   .last-chat {
-    width: 180px;
+    width: 150px;
   }
   .time {
     font-weight: 400;

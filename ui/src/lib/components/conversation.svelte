@@ -483,18 +483,4 @@
     color: var(--color-success);
     font-weight: 500;
   }
-
-  .expiration-badge {
-    background: var(--color-warning);
-    color: var(--color-warning-content);
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 0.7rem;
-    font-weight: 500;
-  }
-
-  .expired-badge {
-    background: var(--color-error);
-    color: var(--color-error-content);
-  }
 </style>
