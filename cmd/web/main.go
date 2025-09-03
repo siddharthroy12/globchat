@@ -114,8 +114,6 @@ func main() {
 		roomManager: *NewWebSocketRoomManager(),
 	}
 
-	app.startCleanupRoutine()
-
 	srv := http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
 		Handler:      app.routes(),

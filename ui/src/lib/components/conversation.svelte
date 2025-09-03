@@ -32,7 +32,6 @@
     create: boolean;
     threadId?: number;
     threadUserId?: number;
-    expires_at?: string; // Added expires_at prop
   };
 
   let {
@@ -45,7 +44,6 @@
     threadId,
     threadUserId,
     onDelete,
-    expires_at, // Added expires_at to props destructuring
   }: ConversationProps = $props();
 
   let inputValue = $state("");
@@ -63,58 +61,6 @@
   let messagesContainer: HTMLDivElement | undefined;
   let isUserScrolling = $state(false);
   let hasFirstMessage = $derived(messages.some((m) => m.is_first));
-
-  // Expiration functions
-  function getDaysLeft(): number {
-    if (!expires_at) return 0;
-
-    const now = new Date();
-    const expirationDate = new Date(expires_at);
-    const timeDiff = expirationDate.getTime() - now.getTime();
-    const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-    return Math.max(0, daysLeft); // Don't show negative days
-  }
-
-  function getDaysLeftText(): string {
-    const days = getDaysLeft();
-    if (days === 0) return "Expires today";
-    if (days === 1) return "1 day left";
-    return `${days} days left`;
-  }
-
-  function isExpired(): boolean {
-    if (!expires_at) return false;
-    return new Date() > new Date(expires_at);
-  }
-
-  function getHoursLeft(): number {
-    if (!expires_at) return 0;
-
-    const now = new Date();
-    const expirationDate = new Date(expires_at);
-    const timeDiff = expirationDate.getTime() - now.getTime();
-    const hoursLeft = Math.ceil(timeDiff / (1000 * 3600));
-
-    return Math.max(0, hoursLeft);
-  }
-
-  function getExpirationText(): string {
-    if (isExpired()) return "Expired";
-
-    const days = getDaysLeft();
-    const hours = getHoursLeft();
-
-    if (days > 0) {
-      return getDaysLeftText();
-    } else if (hours > 1) {
-      return `${hours} hours left`;
-    } else if (hours === 1) {
-      return "1 hour left";
-    } else {
-      return "Expires soon";
-    }
-  }
 
   onMount(() => {
     if (!create) {
@@ -384,7 +330,6 @@
 >
   <div
     class="container shadow-md fixed rounded-md w-[336px]"
-    class:expired-container={isExpired()}
     style={`top:${coordinates.y}px;left:${coordinates.x}px`}
     onclick={(e) => {
       e.stopPropagation();
@@ -400,11 +345,6 @@
       >
         <div class="flex items-center gap-2">
           <p>{create ? "Start Thread" : "Thread"}</p>
-          {#if !create && expires_at}
-            <span class="expiration-badge" class:expired-badge={isExpired()}>
-              {getExpirationText()}
-            </span>
-          {/if}
         </div>
         <div class="flex items-center gap-2">
           {#if !create}
@@ -470,24 +410,13 @@
       <div class="bottom p-3 flex gap-2 py-4">
         {#if getAuthenticationStatus() === AuthenticationStatus.LoggedIn}
           <div class="flex flex-col w-full">
-            <textarea
-              class="textarea w-full text-input"
-              placeholder={isExpired() ? "Thread has expired" : "Write"}
-              disabled={showSendLoading || isExpired()}
-              bind:value={inputValue}
+            <textarea class="textarea w-full text-input" bind:value={inputValue}
             ></textarea>
             <div class="flex items-center justify-between p-2 bottom-buttons">
-              <div class="flex items-center gap2">
-                {#if isExpired()}
-                  <span class="text-xs text-error">This thread has expired</span
-                  >
-                {/if}
-              </div>
+              <div class="flex items-center gap2"></div>
               <button
                 class="btn btn-circle btn-primary w-[24px] h-[24px] p-1"
-                disabled={isSendButtonDisabled ||
-                  showSendLoading ||
-                  isExpired()}
+                disabled={isSendButtonDisabled || showSendLoading}
                 onclick={onSend}
               >
                 {#if showSendLoading}
@@ -513,11 +442,6 @@
 <style>
   .container {
     background: var(--color-base-300);
-  }
-
-  .expired-container {
-    opacity: 0.8;
-    filter: grayscale(30%);
   }
 
   .icon-btn {
