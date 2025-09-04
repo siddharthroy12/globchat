@@ -61,31 +61,37 @@ func (app *application) createThreadHandler(w http.ResponseWriter, r *http.Reque
 
 func (app *application) getThreadsHandler(w http.ResponseWriter, r *http.Request) {
 
-	lat, err := strconv.ParseFloat(r.URL.Query().Get("lat"), 64)
+	minLat, err := strconv.ParseFloat(r.URL.Query().Get("minLat"), 64)
 	if err != nil {
-		app.badRequestResponse(w, r, fmt.Errorf("send valid lat"))
+		app.badRequestResponse(w, r, fmt.Errorf("send valid minLat"))
 		return
 	}
 
-	long, err := strconv.ParseFloat(r.URL.Query().Get("long"), 64)
+	maxLat, err := strconv.ParseFloat(r.URL.Query().Get("maxLat"), 64)
 	if err != nil {
-		app.badRequestResponse(w, r, fmt.Errorf("send valid long"))
-		return
-	}
-	km, err := strconv.ParseFloat(r.URL.Query().Get("km"), 64)
-	if err != nil {
-		app.badRequestResponse(w, r, fmt.Errorf("send valid km"))
+		app.badRequestResponse(w, r, fmt.Errorf("send valid maxLat"))
 		return
 	}
 
-	if km > 50 {
-		app.badRequestResponse(w, r, fmt.Errorf("km too big"))
+	minLong, err := strconv.ParseFloat(r.URL.Query().Get("minLong"), 64)
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("send valid minLong"))
 		return
 	}
 
-	threads, err := app.threadModel.GetByLocationBounds(lat, long, km)
+	maxLong, err := strconv.ParseFloat(r.URL.Query().Get("maxLong"), 64)
+	if err != nil {
+		app.badRequestResponse(w, r, fmt.Errorf("send valid maxLong"))
+		return
+	}
+
+	threads, err := app.threadModel.GetByBounds(minLat, minLong, maxLat, maxLong, 500)
 
 	if err != nil {
+		if errors.Is(err, models.ErrTooManyItems) {
+			app.badRequestResponse(w, r, err)
+			return
+		}
 		app.serverErrorResponse(w, r, err, "fetching threads")
 		return
 	}

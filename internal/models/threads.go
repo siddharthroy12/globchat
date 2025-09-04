@@ -343,3 +343,61 @@ func (m *ThreadModel) GetByLocationBounds(centerLat, centerLong, radiusKm float6
 
 	return threads, nil
 }
+func (m *ThreadModel) GetByBounds(minLat, minLng, maxLat, maxLng float64, threshold int) ([]*Thread, error) {
+	// First check count
+	countStmt := `SELECT COUNT(*) 
+	              FROM threads 
+	              WHERE lat BETWEEN $1 AND $2 
+	                AND long BETWEEN $3 AND $4`
+
+	var count int
+	err := m.DB.QueryRow(countStmt, minLat, maxLat, minLng, maxLng).Scan(&count)
+	if err != nil {
+		return nil, err
+	}
+
+	// If too many, return nothing (or error)
+	if count > threshold {
+		return nil, ErrTooManyItems
+	}
+
+	// Otherwise fetch rows
+	stmt := `SELECT threads.id, lat, long, message, user_id, threads.created_at,
+	                users.username, users.image
+	         FROM threads
+	         INNER JOIN users ON users.id = threads.user_id
+	         WHERE lat BETWEEN $1 AND $2
+	           AND long BETWEEN $3 AND $4
+	         ORDER BY created_at DESC`
+
+	rows, err := m.DB.Query(stmt, minLat, maxLat, minLng, maxLng)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	threads := make([]*Thread, 0)
+	for rows.Next() {
+		thread := &Thread{}
+		err = rows.Scan(
+			&thread.ID,
+			&thread.Lat,
+			&thread.Long,
+			&thread.Message,
+			&thread.UserId,
+			&thread.CreatedAt,
+			&thread.Username,
+			&thread.UserImage,
+		)
+		if err != nil {
+			return nil, err
+		}
+		threads = append(threads, thread)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return threads, nil
+}

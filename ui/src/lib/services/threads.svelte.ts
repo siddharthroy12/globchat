@@ -13,15 +13,23 @@ export type Thread = {
 };
 
 export async function fetchThreads(
-  lat: number,
-  long: number,
-  km: number
-): Promise<Thread[]> {
-  const res = await fetch(`/api/v1/threads?lat=${lat}&long=${long}&km=${km}`, {
-    headers: getAuthHeaders(),
-  });
+  minLat: number,
+  maxLat: number,
+  minLong: number,
+  maxLong: number
+): Promise<Thread[] | null> {
+  const res = await fetch(
+    `/api/v1/threads?minLat=${minLat}&maxLat=${maxLat}&minLong=${minLong}&maxLong=${maxLong}`,
+    {
+      headers: getAuthHeaders(),
+    }
+  );
 
   const json = await res.json();
+
+  if (json["error"]) {
+    return null; // Null means too many items
+  }
 
   return json["threads"];
 }
