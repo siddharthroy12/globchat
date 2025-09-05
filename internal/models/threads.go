@@ -27,6 +27,9 @@ type ThreadModel struct {
 }
 
 func (m *ThreadModel) Create(message string, lat float64, long float64, userId int) (Thread, error) {
+	if len(message) > 280 {
+		return Thread{}, ErrTextTooLong
+	}
 	stmt := "INSERT INTO threads (message, lat, long, user_id) VALUES($1, $2, $3, $4) RETURNING id, lat, long, message, user_id, created_at"
 
 	var thread Thread

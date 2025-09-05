@@ -2,7 +2,8 @@ package models
 
 import "errors"
 
-var ErrNoRecord = errors.New("models: no matching record found ")
-var ErrInvalidCredentials = errors.New("models: invalid credentials")
-var ErrDuplicateEmail = errors.New("models: duplicate email ")
-var ErrTooManyItems = errors.New("models: too many items")
+var (
+	ErrNoRecord     = errors.New("models: no matching record found")
+	ErrTooManyItems = errors.New("too many items in result set")
+	ErrTextTooLong  = errors.New("text is too long")
+)

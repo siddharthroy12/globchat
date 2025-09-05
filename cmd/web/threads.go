@@ -46,6 +46,10 @@ func (app *application) createThreadHandler(w http.ResponseWriter, r *http.Reque
 
 	thread, err := app.threadModel.Create(input.Message, input.Lat, input.Long, user.ID)
 	if err != nil {
+		if errors.Is(err, models.ErrTextTooLong) {
+			app.badRequestResponse(w, r, err)
+			return
+		}
 		app.serverErrorResponse(w, r, err, "create thread")
 		return
 	}

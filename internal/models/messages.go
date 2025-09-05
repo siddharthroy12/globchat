@@ -35,6 +35,9 @@ type MessageModel struct {
 }
 
 func (m *MessageModel) Create(text string, image string, threadId int, userId int, isFirst bool) (Message, error) {
+	if len(text) > 280 {
+		return Message{}, ErrTextTooLong
+	}
 	stmt := "INSERT INTO messages (text, image, thread_id, user_id, is_first) VALUES($1, $2, $3, $4, $5) RETURNING id, text, image, thread_id, is_first, user_id, created_at"
 
 	var message Message

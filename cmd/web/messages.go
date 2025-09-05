@@ -29,6 +29,10 @@ func (app *application) createMessageHandler(w http.ResponseWriter, r *http.Requ
 	message, err := app.messageModel.Create(input.Text, input.Image, input.ThreadId, user.ID, false)
 
 	if err != nil {
+		if errors.Is(err, models.ErrTextTooLong) {
+			app.badRequestResponse(w, r, err)
+			return
+		}
 		app.serverErrorResponse(w, r, err, "create message")
 		return
 	}
