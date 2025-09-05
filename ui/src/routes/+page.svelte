@@ -46,6 +46,7 @@
       container: "map",
       attributionControl: false,
       doubleClickZoom: false,
+      renderWorldCopies: false,
     });
 
     map.on("zoom", handleMapUpdate);
