@@ -34,6 +34,10 @@
   let isLoadingThreads = false;
   let tooManyItems = $state(false);
 
+  // Debouncing variables
+  const DEBOUNCE_DURATION = 100; // milliseconds - you can adjust this
+  let debounceTimeout: number | null = null;
+
   onMount(() => {
     map = new maplibregl.Map({
       style: "https://tiles.openfreemap.org/styles/liberty",
@@ -113,6 +117,46 @@
     addChatComponent = null;
   }
 
+  function getBox() {
+    if (map) {
+      const canvas = map.getCanvas();
+      const width = canvas.width;
+      const height = canvas.height;
+
+      const corners = [
+        [0, 0], // top-left
+        [width, 0], // top-right
+        [width, height], // bottom-right
+        [0, height], // bottom-left
+      ];
+
+      // Convert screen coordinates to LngLat
+      //@ts-ignore
+      const lngLats = corners.map((pt) => map!.unproject(pt));
+
+      // Optionally, compute the bounding box
+      let west = lngLats[0].lng,
+        south = lngLats[0].lat;
+      let east = lngLats[0].lng,
+        north = lngLats[0].lat;
+
+      for (const coord of lngLats) {
+        if (coord.lng < west) west = coord.lng;
+        if (coord.lng > east) east = coord.lng;
+        if (coord.lat < south) south = coord.lat;
+        if (coord.lat > north) north = coord.lat;
+      }
+
+      const accurateBoundsArray = [
+        [west, south], // SW
+        [east, north], // NE
+      ];
+
+      return accurateBoundsArray;
+    }
+    return null;
+  }
+
   function updateMapCursor() {
     if (!map) return;
     const canvas = map.getCanvas();
@@ -125,7 +169,16 @@
     mapZoomLevel = map.getZoom();
     updateMapCursor();
 
-    await loadVisibleThreads();
+    // Clear existing debounce timeout
+    if (debounceTimeout !== null) {
+      clearTimeout(debounceTimeout);
+    }
+
+    // Set new debounced call
+    debounceTimeout = setTimeout(async () => {
+      await loadVisibleThreads();
+      debounceTimeout = null;
+    }, DEBOUNCE_DURATION);
   }
 
   async function loadVisibleThreads() {
@@ -133,17 +186,49 @@
     isLoadingThreads = true;
 
     try {
-      const bounds = map.getBounds();
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
+      // Use getBox() instead of map.getBounds()
+      const boundsArray = getBox();
+      if (!boundsArray) return;
 
-      const minLat = sw.lat;
-      const maxLat = ne.lat;
-      const minLong = sw.lng;
-      const maxLong = ne.lng;
+      const [[west, south], [east, north]] = boundsArray;
 
-      const threads = await fetchThreads(minLat, maxLat, minLong, maxLong);
+      const minLat = south;
+      const maxLat = north;
+      const minLong = west;
+      const maxLong = east;
 
+      let threads: Thread[] | null = null;
+
+      // Check if we're crossing the International Date Line
+      if (minLong > maxLong) {
+        console.log("Crossing International Date Line", { minLong, maxLong });
+
+        // Split the query into two parts:
+        // 1. From minLong to 180 (eastern side)
+        // 2. From -180 to maxLong (western side)
+        const threadsEast = await fetchThreads(minLat, maxLat, minLong, 180);
+        const threadsWest = await fetchThreads(minLat, maxLat, -180, maxLong);
+
+        // Handle the case where either query returns null (too many items)
+        if (threadsEast === null || threadsWest === null) {
+          threads = null;
+        } else {
+          // Combine results from both sides
+          threads = [...threadsEast, ...threadsWest];
+
+          // Remove duplicates if any (threads exactly on the date line might appear twice)
+          const uniqueThreads = new Map<number, Thread>();
+          threads.forEach((thread) => {
+            uniqueThreads.set(thread.id, thread);
+          });
+          threads = Array.from(uniqueThreads.values());
+        }
+      } else {
+        // Normal case - no date line crossing
+        threads = await fetchThreads(minLat, maxLat, minLong, maxLong);
+      }
+
+      // Handle too many items case
       if (threads === null) {
         unloadAllChatComponents();
         tooManyItems = true;
@@ -161,6 +246,7 @@
         }
       });
 
+      // Remove components that are no longer visible
       mountedComponents.forEach((_, id) => {
         if (!visibleThreadIds.has(id)) {
           unloadChatComponent(id);
@@ -265,8 +351,15 @@
   }
 
   function onDestroy() {
+    // Clear any pending debounce timeout
+    if (debounceTimeout !== null) {
+      clearTimeout(debounceTimeout);
+      debounceTimeout = null;
+    }
+
     unloadAllChatComponents();
     removeAddChatComponent();
+
     if (map) {
       map.off("zoom", handleMapUpdate);
       map.off("move", handleMapUpdate);
