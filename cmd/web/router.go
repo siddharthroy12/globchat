@@ -51,5 +51,5 @@ func (app *application) routes() http.Handler {
 	router.NotFound = gzipMiddleware(http.HandlerFunc(app.spaHandler))
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedHandler)
 
-	return app.recoverPanic(app.authenticate(router))
+	return app.recoverPanic(app.authenticate(app.corsMiddleware(router)))
 }
