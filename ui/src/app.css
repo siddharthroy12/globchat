@@ -1,6 +1,10 @@
-@import 'tailwindcss';
-@plugin "daisyui";
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: dark --default;
+}
 
-textarea:focus, input:focus, lable:focus {
-    outline: none;
+textarea:focus,
+input:focus,
+lable:focus {
+  outline: none;
 }
