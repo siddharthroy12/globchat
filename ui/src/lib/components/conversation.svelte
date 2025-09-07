@@ -52,7 +52,9 @@
   let showLoadingMoreMessages = $state(false);
   let showSendLoading = $state(false);
   let closeConnection = $state(() => {});
-  let isSendButtonDisabled = $derived(inputValue.trim() == "");
+  let isSendButtonDisabled = $derived(
+    inputValue.trim() == "" || inputValue.length > 280
+  );
   let closedForever = false;
   let showCopiedMessage = $state(false);
 
@@ -410,10 +412,17 @@
       <div class="bottom p-3 flex gap-2 py-4">
         {#if getAuthenticationStatus() === AuthenticationStatus.LoggedIn}
           <div class="flex flex-col w-full">
-            <textarea class="textarea w-full text-input" bind:value={inputValue}
+            <textarea
+              maxlength="280"
+              class="textarea w-full text-input"
+              bind:value={inputValue}
             ></textarea>
             <div class="flex items-center justify-between p-2 bottom-buttons">
-              <div class="flex items-center gap2"></div>
+              <div class="flex items-center gap2">
+                <p class="text-xs text-base-content/50">
+                  {inputValue.length} / 280
+                </p>
+              </div>
               <button
                 class="btn btn-circle btn-primary w-[24px] h-[24px] p-1"
                 disabled={isSendButtonDisabled || showSendLoading}
