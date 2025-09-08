@@ -9,7 +9,7 @@
   import Avatar from "./avatar.svelte";
   import { mount } from "svelte";
   import MessageOptionDropdown from "./message-option-dropdown.svelte";
-import { linkify } from "$lib/helpers";
+  import { extractLinks, linkify } from "$lib/helpers";
 
   type MessageProps = {
     message: Message;
@@ -18,15 +18,24 @@ import { linkify } from "$lib/helpers";
   const { message, onDelete }: MessageProps = $props();
   let dropdownOpened = $state(false);
   let dropdownButton: HTMLElement | null = $state(null);
+  let imageLoaded = $state(false);
   const isFromUser = $derived(getUserData()?.id == message.user_id);
+  let firstLink = $derived(extractLinks(message.text)[0]);
 
-  const formatTime = (dateString: string) => {
+  const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString([], {
+    const time = date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
     });
+    const day = date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    });
+
+    return `${day} ${time}`;
   };
 
   function openDropdown(e: Event) {
@@ -66,9 +75,22 @@ import { linkify } from "$lib/helpers";
   </div>
   <div class="chat-header">
     {message.username}
-    <time class="text-xs opacity-50">{formatTime(message.created_at)}</time>
+    <time class="text-xs opacity-50">{formatDateTime(message.created_at)}</time>
   </div>
-  <div class="chat-bubble bg-primary text-white">{@html linkify(message.text)}</div>
+  <div class="chat-bubble bg-primary text-white text-wrap break-all">
+    {@html linkify(message.text)}
+
+    {#if firstLink}
+      <img
+        src={firstLink}
+        class="mt-2 rounded-lg max-w-xs block w-full"
+        class:hidden={!imageLoaded}
+        onload={() => (imageLoaded = true)}
+        onerror={() => (firstLink = "")}
+      />
+    {/if}
+  </div>
+
   {#if getAuthenticationStatus() === AuthenticationStatus.LoggedIn}
     <div
       class="absolute left-0 top-0 translate-y-[-50%] p-1 bg-base-100 rounded-xl transition-opacity message-options"

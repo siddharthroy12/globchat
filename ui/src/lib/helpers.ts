@@ -28,9 +28,10 @@ export function getTimeAgo(createdAt: string | Date): string {
   }
 }
 
+const urlRegex =
+  /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\b[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|]\.(com|org|net|edu|gov|mil|biz|info|mobi|name|aero|jobs|museum|coop|asia|cat|int|io|pro|tel|travel|xxx))\b/gi;
+
 export function linkify(text: string): string {
-  const urlRegex =
-    /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\b[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|]\.(com|org|net|edu|gov|mil|biz|info|mobi|name|aero|jobs|museum|coop|asia|cat|int|io|pro|tel|travel|xxx))\b/gi;
   return text.replace(urlRegex, function (url) {
     if (url.startsWith("www.")) {
       return (
@@ -62,4 +63,9 @@ export function linkify(text: string): string {
       );
     }
   });
+}
+
+export function extractLinks(text: string): string[] {
+  const matches = text.match(urlRegex);
+  return matches ? matches : [];
 }
