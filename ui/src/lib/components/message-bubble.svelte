@@ -9,6 +9,7 @@
   import Avatar from "./avatar.svelte";
   import { mount } from "svelte";
   import MessageOptionDropdown from "./message-option-dropdown.svelte";
+import { linkify } from "$lib/helpers";
 
   type MessageProps = {
     message: Message;
@@ -67,7 +68,7 @@
     {message.username}
     <time class="text-xs opacity-50">{formatTime(message.created_at)}</time>
   </div>
-  <div class="chat-bubble bg-primary text-white">{message.text}</div>
+  <div class="chat-bubble bg-primary text-white">{@html linkify(message.text)}</div>
   {#if getAuthenticationStatus() === AuthenticationStatus.LoggedIn}
     <div
       class="absolute left-0 top-0 translate-y-[-50%] p-1 bg-base-100 rounded-xl transition-opacity message-options"

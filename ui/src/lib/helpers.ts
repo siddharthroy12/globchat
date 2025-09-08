@@ -27,3 +27,39 @@ export function getTimeAgo(createdAt: string | Date): string {
     return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
   }
 }
+
+export function linkify(text: string): string {
+  const urlRegex =
+    /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\b[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|]\.(com|org|net|edu|gov|mil|biz|info|mobi|name|aero|jobs|museum|coop|asia|cat|int|io|pro|tel|travel|xxx))\b/gi;
+  return text.replace(urlRegex, function (url) {
+    if (url.startsWith("www.")) {
+      return (
+        '<a href="http://' +
+        url +
+        '" class="link" target="_blank" rel="noopener noreferrer">' +
+        url +
+        "</a>"
+      );
+    } else if (
+      !url.startsWith("http") &&
+      !url.startsWith("ftp") &&
+      !url.startsWith("file")
+    ) {
+      return (
+        '<a href="http://' +
+        url +
+        '" class="link" target="_blank" rel="noopener noreferrer">' +
+        url +
+        "</a>"
+      );
+    } else {
+      return (
+        '<a href="' +
+        url +
+        '" class="link" target="_blank" rel="noopener noreferrer">' +
+        url +
+        "</a>"
+      );
+    }
+  });
+}
