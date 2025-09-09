@@ -4,6 +4,7 @@
   import Conversation from "./conversation.svelte";
   import type { Thread } from "$lib/services/threads.svelte";
   import { getTimeAgo } from "$lib/helpers";
+  import { getMap } from "$lib/services/map.svelte";
 
   let conversationOpen = $state(false);
   let showContentAnimation = $state(false);
@@ -40,56 +41,69 @@
     }
 
     if (startOpen) {
-      console.log("yes");
       showConversation();
     }
   });
 
-  function showConversation(e: Event | null = null) {
-    conversationOpen = true;
-    const el = document.createElement("div");
-    const conversationBoxWidth = 336;
-    const conversationBoxHeight = 417;
-    let x = wrapper.getBoundingClientRect().x;
-    let y = wrapper.getBoundingClientRect().y;
-    if (x + conversationBoxWidth <= window.innerWidth) {
-      x += 40;
-    } else {
-      x = x - (conversationBoxWidth + 10);
-    }
-    if (y + conversationBoxHeight <= window.innerHeight) {
-      y -= 30;
-    } else {
-      y -= conversationBoxHeight;
-    }
-    mount(Conversation, {
-      props: {
-        lat,
-        long,
-        onDelete: () => {
-          document.body.removeChild(el);
-          onDelete();
-        },
-        onCreate: () => {},
-        threadId: id,
-        threadUserId: user_id,
-        coordinates: {
-          x: x,
-          y: y,
-        },
-        create: false,
-        onClose: () => {
-          conversationOpen = false;
-          try {
-            document.body.removeChild(el);
-          } catch {}
-        },
-      },
-      target: el,
+  function zoomTo(long: number, lat: number) {
+    getMap()!.flyTo({
+      center: [long, lat],
+      zoom: 15, // fixed zoom level
+      duration: 2000,
+      essential: true,
     });
+  }
 
-    document.body.appendChild(el);
+  function showConversation(e: Event | null = null) {
     e?.stopPropagation();
+
+    zoomTo(long, lat);
+
+    setTimeout(() => {
+      conversationOpen = true;
+      const el = document.createElement("div");
+      const conversationBoxWidth = 336;
+      const conversationBoxHeight = 417;
+      let x = wrapper.getBoundingClientRect().x;
+      let y = wrapper.getBoundingClientRect().y;
+      if (x + conversationBoxWidth <= window.innerWidth) {
+        x += 40;
+      } else {
+        x = x - (conversationBoxWidth + 10);
+      }
+      if (y + conversationBoxHeight <= window.innerHeight) {
+        y -= 30;
+      } else {
+        y -= conversationBoxHeight;
+      }
+      mount(Conversation, {
+        props: {
+          lat,
+          long,
+          onDelete: () => {
+            document.body.removeChild(el);
+            onDelete();
+          },
+          onCreate: () => {},
+          threadId: id,
+          threadUserId: user_id,
+          coordinates: {
+            x: x,
+            y: y,
+          },
+          create: false,
+          onClose: () => {
+            conversationOpen = false;
+            try {
+              document.body.removeChild(el);
+            } catch {}
+          },
+        },
+        target: el,
+      });
+
+      document.body.appendChild(el);
+    }, 2000);
   }
 </script>
 

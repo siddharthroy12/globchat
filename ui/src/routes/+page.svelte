@@ -17,6 +17,7 @@
     getUserData,
   } from "$lib/services/auth.svelte";
   import ThreadTooCloseModal from "$lib/components/modals/thread-too-close-modal.svelte";
+  import { setMap } from "$lib/services/map.svelte";
 
   let map: null | maplibregl.Map = null;
   let mountedComponents: Map<
@@ -49,6 +50,8 @@
       renderWorldCopies: false,
     });
 
+    setMap(map);
+
     map.on("zoom", handleMapUpdate);
     map.on("move", handleMapUpdate);
     map.on("moveend", handleMapUpdate);
@@ -66,7 +69,6 @@
       map?.on("load", () => {
         zoomTo(thread.long, thread.lat);
         setTimeout(() => {
-          console.log("called2");
           loadChatComponent(thread, false, true);
         }, 2000);
       });
