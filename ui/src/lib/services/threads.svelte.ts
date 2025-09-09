@@ -16,14 +16,16 @@ export async function fetchThreads(
   minLat: number,
   maxLat: number,
   minLong: number,
-  maxLong: number
+  maxLong: number,
+  mine: boolean
 ): Promise<Thread[] | null> {
-  const res = await fetch(
-    `/api/v1/threads?minLat=${minLat}&maxLat=${maxLat}&minLong=${minLong}&maxLong=${maxLong}`,
-    {
-      headers: getAuthHeaders(),
-    }
-  );
+  let url = `/api/v1/threads?minLat=${minLat}&maxLat=${maxLat}&minLong=${minLong}&maxLong=${maxLong}`;
+  if (mine) {
+    url = `/api/v1/threads?mine`;
+  }
+  const res = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
 
   const json = await res.json();
 

@@ -14,7 +14,6 @@
   import {
     AuthenticationStatus,
     getAuthenticationStatus,
-    getUserData,
   } from "$lib/services/auth.svelte";
   import ThreadTooCloseModal from "$lib/components/modals/thread-too-close-modal.svelte";
   import { setMap } from "$lib/services/map.svelte";
@@ -31,6 +30,13 @@
   } | null = null;
 
   let mapZoomLevel = $state(0);
+  let showOnlyUserThreads = $state(false);
+
+  $effect(() => {
+    showOnlyUserThreads;
+    loadVisibleThreads();
+  });
+
   let loadedThreads: Thread[] = [];
   let isLoadingThreads = false;
   let tooManyItems = $state(false);
@@ -215,8 +221,20 @@
         // Split the query into two parts:
         // 1. From minLong to 180 (eastern side)
         // 2. From -180 to maxLong (western side)
-        const threadsEast = await fetchThreads(minLat, maxLat, minLong, 180);
-        const threadsWest = await fetchThreads(minLat, maxLat, -180, maxLong);
+        const threadsEast = await fetchThreads(
+          minLat,
+          maxLat,
+          minLong,
+          180,
+          showOnlyUserThreads
+        );
+        const threadsWest = await fetchThreads(
+          minLat,
+          maxLat,
+          -180,
+          maxLong,
+          showOnlyUserThreads
+        );
 
         // Handle the case where either query returns null (too many items)
         if (threadsEast === null || threadsWest === null) {
@@ -234,7 +252,13 @@
         }
       } else {
         // Normal case - no date line crossing
-        threads = await fetchThreads(minLat, maxLat, minLong, maxLong);
+        threads = await fetchThreads(
+          minLat,
+          maxLat,
+          minLong,
+          maxLong,
+          showOnlyUserThreads
+        );
       }
 
       // Handle too many items case
@@ -412,7 +436,13 @@
   </div>
 {/if}
 
-<Controls {zoomToRandomChat} {zoomToMyLocation} {zoomIn} {zoomOut}></Controls>
+<Controls
+  {zoomToRandomChat}
+  {zoomToMyLocation}
+  {zoomIn}
+  {zoomOut}
+  bind:showOnlyUserThreads
+></Controls>
 <ThreadTooCloseModal />
 
 <style>

@@ -64,7 +64,23 @@ func (app *application) createThreadHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) getThreadsHandler(w http.ResponseWriter, r *http.Request) {
+	mine := r.URL.Query().Has("mine")
+	if mine && app.isAuthenticated(r) {
+		user := app.getUserFromRequst(r)
+		threads, err := app.threadModel.GetAllByUserId(user.ID)
 
+		if err != nil {
+			if errors.Is(err, models.ErrTooManyItems) {
+				app.badRequestResponse(w, r, err)
+				return
+			}
+			app.serverErrorResponse(w, r, err, "fetching threads")
+			return
+		}
+
+		app.writeJSON(w, 200, envelope{"threads": threads}, nil)
+		return
+	}
 	minLat, err := strconv.ParseFloat(r.URL.Query().Get("minLat"), 64)
 	if err != nil {
 		app.badRequestResponse(w, r, fmt.Errorf("send valid minLat"))

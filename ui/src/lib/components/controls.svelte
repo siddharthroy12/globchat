@@ -22,9 +22,15 @@
     zoomToMyLocation: () => void;
     zoomIn: () => void;
     zoomOut: () => void;
+    showOnlyUserThreads: boolean;
   };
-  let { zoomToRandomChat, zoomToMyLocation, zoomIn, zoomOut }: ControlsProps =
-    $props();
+  let {
+    zoomToRandomChat,
+    zoomToMyLocation,
+    zoomIn,
+    zoomOut,
+    showOnlyUserThreads = $bindable(),
+  }: ControlsProps = $props();
 
   function openLoginModal() {
     // @ts-ignore
@@ -106,6 +112,16 @@
     >
       <Minus />
     </button>
+  </div>
+  <div class="toolbar__container shadow-md">
+    <div class="h-[40px] flex items-center gap-2 px-2">
+      <input
+        type="checkbox"
+        class="toggle toggle-md"
+        bind:checked={showOnlyUserThreads}
+      />
+      Show only mine
+    </div>
   </div>
 </div>
 
