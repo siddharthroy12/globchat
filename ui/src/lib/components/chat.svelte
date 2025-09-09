@@ -21,7 +21,12 @@
     id,
     user_id,
     onDelete,
-  }: Thread & { showAnimation: boolean; onDelete: () => void } = $props();
+    startOpen,
+  }: Thread & {
+    showAnimation: boolean;
+    onDelete: () => void;
+    startOpen: boolean;
+  } = $props();
 
   onMount(() => {
     if (showAnimation) {
@@ -33,9 +38,14 @@
         showContentAnimation = false;
       }, 1000);
     }
+
+    if (startOpen) {
+      console.log("yes");
+      showConversation();
+    }
   });
 
-  function showConversation(e: Event) {
+  function showConversation(e: Event | null = null) {
     conversationOpen = true;
     const el = document.createElement("div");
     const conversationBoxWidth = 336;
@@ -79,7 +89,7 @@
     });
 
     document.body.appendChild(el);
-    e.stopPropagation();
+    e?.stopPropagation();
   }
 </script>
 

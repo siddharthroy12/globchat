@@ -63,7 +63,13 @@
     const threadId = urlParams.get("threadId");
     if (threadId) {
       const thread = await fetchThread(+threadId);
-      zoomTo(thread.long, thread.lat);
+      map?.on("load", () => {
+        zoomTo(thread.long, thread.lat);
+        setTimeout(() => {
+          console.log("called2");
+          loadChatComponent(thread, false, true);
+        }, 2000);
+      });
     }
   }
 
@@ -262,8 +268,18 @@
     }
   }
 
-  function loadChatComponent(thread: Thread, showAnimation: boolean) {
-    if (!map || mountedComponents.has(thread.id)) return;
+  function loadChatComponent(
+    thread: Thread,
+    showAnimation: boolean,
+    startOpen: boolean = false
+  ) {
+    if (!map || mountedComponents.has(thread.id)) {
+      if (startOpen) {
+        unloadChatComponent(thread.id);
+      } else {
+        return;
+      }
+    }
 
     const componentDom = document.createElement("div");
     componentDom.addEventListener("mouseenter", () => {
@@ -278,6 +294,7 @@
       props: {
         ...thread,
         showAnimation,
+        startOpen,
         onDelete: () => {
           unloadChatComponent(thread.id);
         },
