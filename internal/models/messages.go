@@ -281,3 +281,17 @@ func (m *MessageModel) GetAfterID(threadId int, id int, limit int) ([]Message, e
 
 	return messages, nil
 }
+
+// GetLastCreatedAtByUser returns the created_at of the most recently created message by userId.
+// If the user has no messages, this will return sql.ErrNoRows.
+func (m *MessageModel) GetLastCreatedAtByUser(userId int) (time.Time, error) {
+	stmt := "SELECT created_at FROM messages WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1"
+
+	var createdAt time.Time
+	err := m.DB.QueryRow(stmt, userId).Scan(&createdAt)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return createdAt, nil
+}

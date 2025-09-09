@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"globechat.live/internal/models"
@@ -14,13 +15,24 @@ func (app *application) createMessageHandler(w http.ResponseWriter, r *http.Requ
 
 	user := app.getUserFromRequst(r)
 
+	lastCreated, err := app.messageModel.GetLastCreatedAtByUser(user.ID)
+	if err == nil {
+		// If we have a lastCreated time, enforce a 1-second minimum gap between messages.
+		if !lastCreated.IsZero() && time.Since(lastCreated) < time.Second {
+			app.writeJSON(w, http.StatusTooManyRequests, envelope{
+				"error": "You are sending messages too quickly. Please wait a moment before sending another message.",
+			}, nil)
+			return
+		}
+	}
+
 	var input struct {
 		ThreadId int    `json:"thread_id"`
 		Text     string `json:"text"`
 		Image    string `json:"image"`
 	}
 
-	err := app.readJSONFromRequest(w, r, &input)
+	err = app.readJSONFromRequest(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
