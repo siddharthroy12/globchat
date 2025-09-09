@@ -17,6 +17,7 @@
   } from "$lib/services/auth.svelte";
   import ThreadTooCloseModal from "$lib/components/modals/thread-too-close-modal.svelte";
   import { setMap } from "$lib/services/map.svelte";
+  import TooManyThreadsModal from "$lib/components/modals/too-many-threads-modal.svelte";
 
   let map: null | maplibregl.Map = null;
   let mountedComponents: Map<
@@ -444,6 +445,8 @@
   bind:showOnlyUserThreads
 ></Controls>
 <ThreadTooCloseModal />
+
+<TooManyThreadsModal />
 
 <style>
   :global(.chat-marker) {

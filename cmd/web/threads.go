@@ -44,6 +44,17 @@ func (app *application) createThreadHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	userThreads, err := app.threadModel.GetAllByUserId(user.ID)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "getting user threads")
+		return
+	}
+
+	if len(userThreads) >= 10 {
+		app.badRequestResponse(w, r, fmt.Errorf("too many threads"))
+		return
+	}
+
 	thread, err := app.threadModel.Create(input.Message, input.Lat, input.Long, user.ID)
 	if err != nil {
 		if errors.Is(err, models.ErrTextTooLong) {

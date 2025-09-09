@@ -236,6 +236,11 @@
         // @ts-ignore
         thread_too_close_modal.showModal();
       }
+      // @ts-ignore
+      if (e?.message?.includes("too many threads")) {
+        // @ts-ignore
+        too_many_threads_modal.showModal();
+      }
     }
   }
 
@@ -321,6 +326,21 @@
         <button class="btn">Close</button>
         <button class="btn btn-error" onclick={onDeleteConfirmation}>Yes</button
         >
+      </form>
+    </div>
+  </div>
+</dialog>
+
+<dialog
+  id="too_many_threads_modal"
+  class="modal modal-bottom sm:modal-middle"
+>
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">Too many threads</h3>
+    <p class="py-4">You can only create 10 threads. Please delete one of your threads to create a new one.</p>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn">Close</button>
       </form>
     </div>
   </div>
