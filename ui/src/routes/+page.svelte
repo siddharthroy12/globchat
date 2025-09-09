@@ -308,7 +308,7 @@
       anchor: "bottom",
     })
       .setLngLat([thread.long, thread.lat])
-      .addTo(map);
+      .addTo(map!);
 
     mountedComponents.set(thread.id, { marker, mount: componentMount });
   }
